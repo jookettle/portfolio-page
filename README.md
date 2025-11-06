@@ -1,8 +1,8 @@
 ### 자기 이력 홈페이지 만들기
 
-- Github 링크 : https://github.com/soborocat/soborocat.github.io
+- Github 링크 : https://github.com/jookettle/jookettle.github.io
 - 본 사이트는 한남대학교 컴퓨터공학과 과제의 일환으로 제작되었습니다.
-- 링크 : https://soborocat.github.io 또는 https://ai.ai.kr (CNAME이 적용된 커스텀 도메인)
+- 링크 : https://jookettle.github.io 또는 https://ai.ai.kr (CNAME이 적용된 커스텀 도메인)
 
 - 깃허브 페이지로 구현되어있으나(정적웹으로 빌드 후 접근 가능하게 되는 매커니즘) 자체 소유 도메인 활용하여 https://ai.ai.kr 로 리다이렉트됩니다.
 - CSS의 Transition과 hover 이벤트를 활용하여 부드러운 애니메이션 효과를 적극 활용하였습니다.

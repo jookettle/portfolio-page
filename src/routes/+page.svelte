@@ -111,7 +111,7 @@
 			'FURPIC (퍼픽)': {
 				title: 'FURPIC (퍼픽)',
 				description:
-					'Svelte 프레임워크와 NestJS 기반의 백엔드로 구축된 서브컬쳐 사진 공유 플랫폼으로 사진 촬영자와 피사체 간 정보를 연결해 공유할 수 있는 플랫폼입니다. 현재 900개 이상의 캐릭터 데이터와 하루 접속자 1K 이상의 유저풀을 보유하고 있습니다.',
+					'Svelte 프레임워크와 NestJS 기반의 백엔드로 구축된 서브컬쳐 사진 공유 플랫폼으로 사진 촬영자와 피사체 간 정보를 연결해 공유할 수 있는 플랫폼입니다. 현재 900개 이상의 캐릭터 데이터와 하루 접속자 1.7K 이상의 유저풀을 보유하고 있습니다.',
 				role: '프론트엔드 개발자 / 디자이너 / 대외 담당 및 마케팅',
 				category: '웹 애플리케이션',
 				team: 'FURPIC TEAM'
@@ -124,14 +124,6 @@
 				category: '챗봇',
 				team: '팀 큐빗 (FluffyCompany)'
 			},
-			'캐릭터 사진 자동 분류 시스템': {
-				title: '캐릭터 사진 자동 분류 시스템',
-				description:
-					'Few Shot Learning 기술을 사용하여 적은 이미지 데이터셋으로 특수한 사진 피사체를 보다 정확하게 구분하여 피사체의 정보를 확인할 수 있는 기술입니다.',
-				role: '풀스택 개발자 / 데이터 엔지니어',
-				category: '머신러닝',
-				team: 'FURPIC TEAM'
-			},
 			'중앙서버 기반 RAW 이미지 편집 소프트웨어': {
 				title: '중앙서버 기반 RAW 이미지 편집 소프트웨어',
 				description:
@@ -139,18 +131,11 @@
 				role: '프로젝트 매니저 / 풀스택 개발자',
 				category: '데스크톱 소프트웨어'
 			},
-			'school-py': {
-				title: 'school-py',
-				description: '파이썬으로 만든 급식 및 학교 정보를 가져오는 모듈입니다.',
-				role: '개발자',
-				category: '오픈소스'
-			},
-			'Yak Project': {
-				title: 'Yak Project',
-				description: '웹사이트를 크롤링하여 알약 정보를 식별하는 프로젝트입니다.',
+			'HNU BUS': {
+				title: 'HNU BUS',
+				description: '한남대학교 셔틀 버스를 편하게 이용하게 해주는 웹사이트입니다.',
 				role: '풀스택 개발자',
-				category: '웹 애플리케이션',
-				team: '교육 관련 팀 프로젝트'
+				category: '웹 애플리케이션'
 			}
 		},
 		en: {
@@ -165,7 +150,7 @@
 			'FURPIC (퍼픽)': {
 				title: 'FURPIC',
 				description:
-					'A subculture photo sharing platform built with Svelte framework and NestJS backend that connects information between photographers and subjects. Currently holds over 900 character data and a user pool of over 1K daily visitors.',
+					'A subculture photo sharing platform built with Svelte framework and NestJS backend that connects information between photographers and subjects. Currently holds over 900 character data and a user pool of over 1.7K daily visitors.',
 				role: 'Frontend Developer / Designer / External Relations & Marketing',
 				category: 'Web Application',
 				team: 'FURPIC TEAM'
@@ -178,34 +163,11 @@
 				category: 'Chatbot',
 				team: 'Team Qubit (FluffyCompany)'
 			},
-			'캐릭터 사진 자동 분류 시스템': {
-				title: 'Character Photo Auto-Classification System',
-				description:
-					'A technology that uses Few Shot Learning to more accurately distinguish special photo subjects with small image datasets and identify subject information.',
-				role: 'Fullstack Developer / Data Engineer',
-				category: 'Machine Learning',
-				team: 'FURPIC TEAM'
-			},
-			'중앙서버 기반 RAW 이미지 편집 소프트웨어': {
-				title: 'Server-based RAW Image Editing Software',
-				description:
-					'A RAW image editor for both professional photographers and general users, a protocol-based editing software that processes calculations on the server to ensure fast speed and lightness anywhere.',
-				role: 'Project Manager / Fullstack Developer',
-				category: 'Desktop Software'
-			},
-			'school-py': {
-				title: 'school-py',
-				description: 'A module made with Python to get meal and school information.',
-				role: 'Developer',
-				category: 'Open Source'
-			},
-			'Yak Project': {
-				title: 'Yak Project',
-				description:
-					'A project that crawls the pharmaceutical information website to identify pill information.',
+			'HNU BUS': {
+				title: 'HNU BUS',
+				description: 'A website that makes it easy to use the Hannam University shuttle bus.',
 				role: 'Fullstack Developer',
-				category: 'Web Application',
-				team: 'Educational Team Project'
+				category: 'Web Application'
 			}
 		},
 		ja: {
@@ -219,7 +181,7 @@
 			'FURPIC (퍼픽)': {
 				title: 'FURPIC',
 				description:
-					'SvelteフレームワークとNestJSベースのバックエンドで構築されたサブカルチャー写真共有プラットフォームで、写真撮影者と被写体間の情報を接続して共有できるプラットフォームです。現在900以上のキャラクターデータと1日のアクセス者1K以上のユーザープールを保有しています。',
+					'SvelteフレームワークとNestJSベースのバックエンドで構築されたサブカルチャー写真共有プラットフォームで、写真撮影者と被写体間の情報を接続して共有できるプラットフォームです。現在900以上のキャラクターデータと1日のアクセス者1.7K以上のユーザープールを保有しています。',
 				role: 'フロントエンド開発者 / デザイナー / 対外担当およびマーケティング',
 				category: 'ウェブアプリケーション',
 				team: 'FURPIC TEAM'
@@ -232,33 +194,11 @@
 				category: 'チャットボット',
 				team: 'チーム キュービット (FluffyCompany)'
 			},
-			'캐릭터 사진 자동 분류 시스템': {
-				title: 'キャラクター写真自動分類システム',
-				description:
-					'Few Shot Learning技術を使用して少ない画像データセットで特殊な写真被写体をより正確に区別して被写体の情報を確認できる技術です。',
-				role: 'フルスタック開発者 / データエンジニア',
-				category: '機械学習',
-				team: 'FURPIC TEAM'
-			},
-			'중앙서버 기반 RAW 이미지 편집 소프트웨어': {
-				title: '中央サーバーベースRAW画像編集ソフトウェア',
-				description:
-					'専門写真家と一般人の両方が使用可能なRAW画像エディターで、サーバーで演算を処理してどこでも高速で軽量を保証するプロトコルベースの補正ソフトウェアです。',
-				role: 'プロジェクトマネージャー / フルスタック開発者',
-				category: 'デスクトップソフトウェア'
-			},
-			'school-py': {
-				title: 'school-py',
-				description: 'Pythonで作った給食および学校情報を取得するモジュールです。',
-				role: '開発者',
-				category: 'オープンソース'
-			},
-			'Yak Project': {
-				title: 'Yak Project',
-				description: 'ウェブサイトをクローリングして錠剤情報を識別するプロジェクトです。',
+			'HNU BUS': {
+				title: 'HNU BUS',
+				description: '漢南大学のシャトルバスを便利に利用できるウェブサイトです。',
 				role: 'フルスタック開発者',
-				category: 'ウェブアプリケーション',
-				team: '教育関連チームプロジェクト'
+				category: 'ウェブアプリケーション'
 			}
 		}
 	};
@@ -267,6 +207,16 @@
 	$: pt = projectTranslations[$locale];
 
 	const projects: Project[] = [
+		{
+			title: 'HNU BUS',
+			year: '2025',
+			category: '웹 애플리케이션',
+			role: '풀스택 개발자',
+			tech: ['SVELTEKIT', 'TYPESCRIPT', 'TAILWINDCSS'],
+			link: 'https://hnubus.ai.ai.kr',
+			status: 'current',
+			image: 'product_hnubus.png'
+		},
 		{
 			title: 'Cat.Fluffy.Company',
 			year: '2025',
@@ -299,42 +249,6 @@
 			tech: ['TYPESCRIPT', 'DISCORDJS', 'CANVAS', 'CI/CD'],
 			status: 'current',
 			image: 'product_chatbot.png'
-		},
-		{
-			title: '캐릭터 사진 자동 분류 시스템',
-			year: '2025',
-			team: 'FURPIC TEAM',
-			category: '머신러닝',
-			role: '풀스택 개발자 / 데이터 엔지니어',
-			tech: ['PYTHON', 'PILLOW', 'SCIKIT-LEARN', 'OPTIMIZATION'],
-			status: 'current'
-		},
-		{
-			title: '중앙서버 기반 RAW 이미지 편집 소프트웨어',
-			year: '2025',
-			category: '데스크톱 소프트웨어',
-			role: '프로젝트 매니저 / 풀스택 개발자',
-			tech: ['PYTHON', 'PYQT', 'IMAGE PROCESSING', 'GPU ACCELERATION', 'RESTFUL API'],
-			status: 'paused'
-		},
-		{
-			title: 'school-py',
-			year: '2021',
-			category: 'opensource',
-			tech: ['PYTHON', 'CRAWLING'],
-			status: 'preserved',
-			role: '개발자',
-			link: 'https://github.com/soborocat/school-py'
-		},
-		{
-			title: 'Yak Project',
-			team: '교육 관련 팀 프로젝트',
-			year: '2019',
-			link: 'https://github.com/soborocat/Yakproject',
-			category: '웹 애플리케이션',
-			role: 'Fullstack Developer',
-			tech: ['PHP', 'CRAWLING'],
-			status: 'preserved'
 		}
 	];
 
@@ -453,7 +367,7 @@
 
 			<div class="flex justify-center gap-8 md:gap-12">
 				<a
-					href="https://github.com/soborocat"
+					href="https://github.com/jookettle"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="social-link text-black transition-all duration-300 hover:scale-110 hover:rotate-12"
@@ -461,7 +375,7 @@
 					<BrandGithub size={24} />
 				</a>
 				<a
-					href="mailto:root@ai.ai.kr"
+					href="mailto:wnwlsvy0914@gmail.com"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="social-link text-black transition-all duration-300 hover:scale-110 hover:rotate-12"
@@ -625,21 +539,21 @@
 						<div class="contact-item">
 							<div class="mb-2 text-xs font-medium tracking-wide text-black md:text-sm">EMAIL</div>
 							<a
-								href="mailto:root@ai.ai.kr"
+								href="mailto:wnwlsvy0914@gmail.com"
 								class="text-lg font-medium break-all text-black transition-all duration-300 hover:scale-105 hover:opacity-60 md:text-xl"
 							>
-								ROOT@AI.AI.KR
+								wnwlsvy0914@gmail.com
 							</a>
 						</div>
 						<div class="contact-item">
 							<div class="mb-2 text-xs font-medium tracking-wide text-black md:text-sm">GITHUB</div>
 							<a
-								href="https://github.com/soborocat"
+								href="https://github.com/jookettle"
 								target="_blank"
 								rel="noopener noreferrer"
 								class="text-lg font-medium text-black transition-all duration-300 hover:scale-105 hover:opacity-60 md:text-xl"
 							>
-								@soborocat
+								@jookettle
 							</a>
 						</div>
 						<div class="contact-item">
