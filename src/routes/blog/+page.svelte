@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	export let data: { posts: { slug: string; metadata: { title: string; date: string } }[] };
 </script>
 
@@ -10,7 +11,7 @@
 <ul>
 	{#each data.posts as post}
 		<li>
-			<a href={`/blog/${post.slug}`}>{post.metadata.title}</a>
+			<a href={`${base}/blog/${post.slug}`}>{post.metadata.title}</a>
 			<span> - {post.metadata.date}</span>
 		</li>
 	{/each}

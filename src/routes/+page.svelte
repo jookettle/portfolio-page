@@ -1,5 +1,6 @@
 ﻿<script lang="ts">
 	import { applyFootnotes } from '$lib/blog';
+	import { base } from '$app/paths';
 	export let data: {
 		posts: { slug: string; metadata: { title: string; date: string; description: string; image?: string; footnotes?: string[]; visible?: boolean } }[];
 	};
@@ -176,11 +177,11 @@
 			{#each data.posts as post}
 				{@const cardIdx = { n: 0 }}
 				<li class="group">
-					<a href={`/blog/${post.slug}` }>
+					<a href={`${base}/blog/${post.slug}` }>
 						<div class="border border-zinc-200 h-40 w-full overflow-hidden rounded-2xl">
 							{#if post.metadata.image}
 								<img
-									src={post.metadata.image}
+									src={post.metadata.image.startsWith('/') ? `${base}${post.metadata.image}` : post.metadata.image}
 									alt={post.metadata.title}
 									class="header-image h-full w-full object-cover object-center"
 								/>

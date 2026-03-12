@@ -1,5 +1,6 @@
 import matter from 'gray-matter';
 import { marked } from 'marked';
+import { base } from '$app/paths';
 
 export interface PostMetadata {
 	title: string;
@@ -39,6 +40,11 @@ export function applyFootnotes(
 		const escaped = note.replace(/"/g, '&quot;');
 		return `<span class="fn-marker" tabindex="0">${num})<span class="fn-tooltip">${escaped}</span></span>`;
 	});
+}
+
+function prependBaseToRootUrls(html: string): string {
+	if (!base) return html;
+	return html.replace(/(src|href)="\/(?!\/)/g, `$1="${base}/`);
 }
 
 // vite's import-glob requires the pattern start with './' or '/'
@@ -125,7 +131,7 @@ export async function getPost(slug: string): Promise<Post | undefined> {
 	const titleHtml = applyFootnotes((data as any).title as string ?? '', footnotes, displayCounter, arrayIdx);
 	md = applyFootnotes(md, footnotes, displayCounter, arrayIdx);
 
-	const html = await marked(md);
+	const html = prependBaseToRootUrls(await marked(md));
 	return {
 		slug,
 		metadata: data as PostMetadata,
