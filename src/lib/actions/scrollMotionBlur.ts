@@ -27,9 +27,12 @@ const RESCAN_FRAMES = 15;
  * 잎사귀 쪽 요소만 넣어야 한다. 중첩 제거가 바깥쪽을 남기는 방식이라
  * section이나 div 같은 큰 컨테이너를 넣으면 전부 하나로 합쳐져, 문서 전체에
  * 필터를 걸던 처음 상태로 되돌아간다.
+ *
+ * 코드 블록(pre)과 표(table)는 넣지 않는다. 둘 다 자체 스크롤이 있는 요소라
+ * 필터가 걸리면 매 프레임 통째로 다시 그려야 해서, 코드 블록이 화면에 보일
+ * 때마다 페이지 스크롤이 버벅였다.
  */
-const BLOCKS =
-	'img, p, h1, h2, h3, h4, h5, h6, li, blockquote, pre, table, a, span, figure, button';
+const BLOCKS = 'img, p, h1, h2, h3, h4, h5, h6, li, blockquote, a, span, figure, button';
 
 /**
  * 스크롤 속도에 따라 세로 모션블러를 거는 액션.

@@ -65,6 +65,17 @@
 	font-display: swap;
 }
 
+/*
+ * 이 사이트는 밝은 화면 하나로 디자인되어 있다. 바탕색과 color-scheme을 밝혀 두지
+ * 않으면 브라우저가 투명한 페이지 뒤에 제 바탕을 깐다(다크 모드면 어두운 색, 앱 속
+ * 브라우저면 회색). 그러면 흰 바탕을 가진 요소만 붕 떠 보이고, 스크롤바나 입력칸도
+ * 어두운 모양으로 그려진다.
+ */
+html {
+	color-scheme: light;
+	background-color: #fff;
+}
+
 body {
 	font-family: 'SUIT Variable', sans-serif;
 	-webkit-font-smoothing: antialiased;
@@ -378,7 +389,7 @@ a:has(.lit) {
 		margin: 0;
 		font-weight: 400;
 		color: #1f2328;
-		background-color: #ffffff;
+		/* 배경은 두지 않는다. 흰색을 박아 두면 페이지 바탕이 흰색이 아닐 때 본문만 흰 상자로 뜬다. */
 		font-size: 16px;
 		line-height: 1.5;
 		word-wrap: break-word;
@@ -454,6 +465,23 @@ a:has(.lit) {
 		padding-left: 2em;
 	}
 
+	/*
+	 * Tailwind의 기본 스타일이 모든 목록의 기호를 없애 두므로 본문 목록에서만 되살린다.
+	 * 이 스타일이 본래 기댄 브라우저 기본값(점, 숫자)이 지워져 있어 따로 적어야 한다.
+	 * 홈의 포스트 목록 같은 다른 목록은 그대로 기호 없이 둔다.
+	 */
+	.markdown-body ul {
+		list-style-type: disc;
+	}
+
+	.markdown-body ol {
+		list-style-type: decimal;
+	}
+
+	.markdown-body ul ul {
+		list-style-type: circle;
+	}
+
 	.markdown-body ol ol,
 	.markdown-body ul ol {
 		list-style-type: lower-roman;
@@ -513,6 +541,30 @@ a:has(.lit) {
 		word-wrap: normal;
 		background-color: rgba(0, 0, 0, 0);
 		border: 0;
+	}
+
+	/*
+	 * 터치 기기에서는 코드를 줄바꿈해 가로 스크롤 영역을 없앤다.
+	 *
+	 * 코드 블록이 화면보다 넓으면 그 자체로 가로 스크롤 영역이 된다. 위아래로 미는
+	 * 손가락은 완벽한 수직이 아니어서, 비스듬히 시작한 제스처를 폰이 가로 스크롤로
+	 * 판정하면 코드 블록이 붙잡아 페이지가 내려가지 않는다. 코드 블록은 화면 폭을
+	 * 꽉 채우고 길이도 길어서 피해서 밀기도 어렵다. 줄바꿈하면 붙잡을 것이 없어
+	 * 세로 제스처가 곧장 페이지로 간다. pre-wrap이라 앞쪽 들여쓰기는 그대로 남는다.
+	 * 데스크톱은 휠이 세로 스크롤을 페이지로 넘겨주므로 한 줄로 두고 가로로 스크롤한다.
+	 */
+	@media (hover: none) and (pointer: coarse) {
+		.markdown-body pre {
+			overflow: visible;
+			white-space: pre-wrap;
+			overflow-wrap: anywhere;
+		}
+
+		.markdown-body pre code,
+		.markdown-body pre tt {
+			white-space: inherit;
+			overflow-wrap: inherit;
+		}
 	}
 
 	.markdown-body hr {
