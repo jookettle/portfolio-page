@@ -72,18 +72,46 @@ body {
 }
 
 /*
- * 기울기에 따라 페이지 전체가 미세하게 기울고 흐른다. 화면 위에 떠 있는
- * 느낌을 주는 장치라 움직임이 작아야 하고, 커지면 읽기가 불편해진다.
+ * 기울기에 따라 화면이 떠 있는 판처럼 기운다.
  *
- * 행렬은 액션이 matrix3d로 직접 계산해 --tilt-matrix로 내려보낸다. 회전축과
- * 원근을 문서 중앙이 아니라 지금 보고 있는 화면 중앙에 두어야 하기 때문이며,
- * 자세한 이유는 tiltLight 액션의 주석에 있다.
+ * 평소에는 셋 다 평범한 블록이다. 기울기 센서가 값을 보내기 시작하면 액션이
+ * .tilt-active를 붙이고, 그때부터 .float-layer는 화면 크기로 고정된 판이 된다.
+ * 문서에 3D 변환을 걸면 판의 테두리가 보이지 않아 글자가 일그러지는 것으로만
+ * 보이기 때문에, 변환은 반드시 화면 크기의 판에 건다.
  *
- * transform은 합성 단계에서 처리되므로 매 프레임 바뀌어도 다시 그리지 않는다.
- * 센서가 없으면 변수가 비어 있어 none이 되고 아무 일도 일어나지 않는다.
+ * 판 뒤에는 바탕색을 깔아 둔다. 판과 바탕이 같은 흰색이면 판이 기울어도
+ * 가장자리가 드러나지 않아 떠 있는 느낌이 전혀 나지 않는다.
+ *
+ * transform은 합성 단계에서 처리되므로 기울기와 스크롤이 매 프레임 바뀌어도
+ * 다시 그리지 않는다.
  */
-.float-layer {
+.float-spacer {
+	display: none;
+}
+
+.tilt-active {
+	background: #e4e4e7;
+}
+
+.tilt-active .float-layer {
+	position: fixed;
+	inset: 0;
+	overflow: hidden;
+	background: #fff;
+	/* 판이 들어올수록 모서리가 둥글어지고 그림자가 짙어져 떠 있는 물체가 된다. */
+	border-radius: calc(var(--light-strength, 0) * 14px);
+	box-shadow: 0 calc(var(--light-strength, 0) * 18px) calc(var(--light-strength, 0) * 40px)
+		rgba(24, 24, 27, calc(var(--light-strength, 0) * 0.28));
 	transform: var(--tilt-matrix, none);
+}
+
+.tilt-active .float-content {
+	transform: translate3d(0, var(--scroll-offset, 0px), 0);
+}
+
+.tilt-active .float-spacer {
+	display: block;
+	height: var(--content-height, 0px);
 }
 
 /*

@@ -16,19 +16,23 @@
 -->
 <div class="overflow-x-clip" use:scrollMotionBlur use:footnoteTooltip use:smoothScroll use:tiltLight>
 	<!--
-		움직이는 층은 반드시 클립 안쪽에 있어야 한다. 변형된 요소는 조상의 스크롤
-		영역을 넓히기 때문에, 클립과 같은 요소에 걸면 가로로 밀린 만큼 문서가
-		넓어져 가로 스크롤이 다시 생긴다.
+		기울기 센서가 켜지면 .float-layer가 화면 크기로 고정된 판이 되고, 판 전체가
+		기운다. 내용(.float-content)은 판 안에서 스크롤 위치만큼 끌어올려진다.
+		센서가 없으면 둘 다 평범한 블록이라 아무것도 달라지지 않는다.
 	-->
 	<div class="float-layer">
-		<div class="max-w-5xl mx-auto px-4">
-			<Navbar/>
-			{@render children()}
-		</div>
-		<footer>
-			<div class="max-w-5xl mx-auto px-4 py-8 text-center text-sm text-zinc-800">
-				<p>© {new Date().getFullYear()} Jinpyo Joo. All rights reserved.</p>
+		<div class="float-content">
+			<div class="max-w-5xl mx-auto px-4">
+				<Navbar/>
+				{@render children()}
 			</div>
-		</footer>
+			<footer>
+				<div class="max-w-5xl mx-auto px-4 py-8 text-center text-sm text-zinc-800">
+					<p>© {new Date().getFullYear()} Jinpyo Joo. All rights reserved.</p>
+				</div>
+			</footer>
+		</div>
 	</div>
+	<!-- 판이 문서 흐름에서 빠진 동안 문서 높이를 대신 채워, 브라우저가 평소처럼 스크롤하게 한다. -->
+	<div class="float-spacer" aria-hidden="true"></div>
 </div>

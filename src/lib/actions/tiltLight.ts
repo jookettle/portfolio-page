@@ -186,22 +186,24 @@ export function createTiltTracker(config: {
 }
 
 /**
- * 기기를 기울이면 페이지가 화면 위에 떠 있는 것처럼 기울고 흐르며,
- * 같은 광원이 표면을 훑고 지나간다.
+ * 기기를 기울이면 화면이 떠 있는 판처럼 기울고 흐르며, 같은 광원이 표면을
+ * 훑고 지나간다.
  *
- * 변환은 matrix3d 하나로 직접 계산한다. 회전축을 문서 중앙이 아니라 지금
- * 보고 있는 화면 중앙으로 옮겨야 하기 때문이다. 4000px가 넘는 문서를 제
- * 중앙 기준으로 회전시키면 위아래 끝이 Z축으로 수백 px씩 밀려서, 페이지
- * 위쪽이 아래쪽보다 눈에 띄게 커 보이고 스크롤할 때마다 배율이 변한다.
- * 축을 화면 중앙에 두면 보이는 영역은 언제나 축 근처라 왜곡이 일정하다.
+ * 변환은 문서가 아니라 화면 크기의 판에 건다. 긴 문서에 3D 변환을 걸면 판의
+ * 테두리가 보이지 않아서, 화면이 기우는 게 아니라 글자가 일그러지는 것으로만
+ * 보인다. 그래서 센서가 값을 보내기 시작하면 페이지를 화면에 고정된 판으로
+ * 바꾸고(.tilt-active), 내용은 그 안에서 스크롤 위치만큼 끌어올린다. 판이 기울면
+ * 가장자리로 뒤쪽 바탕이 드러나 떠 있는 화면으로 읽힌다.
  *
- * 원근도 부모의 perspective 속성에 맡기지 않고 행렬에 함께 넣는다. 그래야
- * 축을 옮긴 좌표계 안에서 원근이 걸린다.
+ * 문서 스크롤 자체는 그대로 둔다. 내용과 같은 높이의 빈 요소가 문서를 채우고
+ * 있어서 브라우저는 평소처럼 스크롤하고, 모바일 주소창이 접히는 동작도 유지된다.
+ * 센서가 없는 데스크톱은 이 모드에 들어가지 않으므로 아무것도 달라지지 않는다.
  *
- * 기울기는 절대 각도가 아니라 중립 자세로부터의 변화량으로 다룬다. iOS의
- * UIInterpolatingMotionEffect가 기준 자세의 역을 곱해 상대 회전만 보는 것과
- * 같은 이유다. 특정 각도로 들고 본다고 가정하면 사람마다 자세가 달라 가만히
- * 있어도 화면이 한쪽으로 기울어진 채 고정된다.
+ * 판이 화면 크기이므로 회전축은 CSS 기본 transform-origin(판의 중앙)이 그대로
+ * 맡는다. 행렬에는 원근·회전·이동만 담는다.
+ *
+ * 기울기는 절대 각도가 아니라 중립 자세로부터의 변화량으로 다룬다. 자세한
+ * 이유는 createTiltTracker의 주석에 있다.
  *
  * 기울기 센서 전용이다. 센서가 없거나 허가를 받지 못하면 세기가 0에 머물러
  * 아무것도 그려지지 않는다.
@@ -229,10 +231,11 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 	let frame = 0;
 	let gotReading = false;
 
-	function writeMatrix() {
-		// 지금 보고 있는 화면의 중앙을 회전축으로 삼는다.
-		const pivot = window.scrollY + window.innerHeight / 2;
+	const content = node.querySelector<HTMLElement>('.float-content');
+	let active = false;
+	let resize: ResizeObserver | null = null;
 
+	function writeMatrix() {
 		const nx = (x - 0.5) * 2;
 		const ny = (y - 0.5) * 2;
 
@@ -241,16 +244,42 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		const ry = -nx * rotate * strength;
 		const rx = ny * rotate * strength;
 
-		// 축을 원점으로 옮기고 → 이동 → 회전 → 원근 → 다시 제자리로.
-		let m = translation(0, pivot, 0);
-		m = multiply(m, perspectiveMatrix(distance));
+		// 원근 → 회전 → 이동. 축은 transform-origin(판의 중앙)이 맡는다.
+		let m = perspectiveMatrix(distance);
 		m = multiply(m, rotationX(rx));
 		m = multiply(m, rotationY(ry));
 		m = multiply(m, translation(tx, ty, 0));
-		m = multiply(m, translation(0, -pivot, 0));
 
 		const value = m.map((n) => Number(n.toFixed(6))).join(',');
 		node.style.setProperty('--tilt-matrix', `matrix3d(${value})`);
+	}
+
+	function writeScroll() {
+		node.style.setProperty('--scroll-offset', `${-window.scrollY}px`);
+	}
+
+	function writeContentHeight() {
+		if (content) node.style.setProperty('--content-height', `${content.offsetHeight}px`);
+	}
+
+	/**
+	 * 페이지를 화면에 고정된 판으로 바꾼다.
+	 *
+	 * 순서가 중요하다. 빈 요소에 높이를 먼저 줘야 판이 문서 흐름에서 빠질 때
+	 * 문서 높이가 그대로 유지된다. 그렇지 않으면 한순간 문서가 짧아지면서
+	 * 스크롤 위치가 맨 위로 튄다. 이 시점에는 세기가 0이라 행렬도 항등이므로,
+	 * 전환 전후의 화면은 픽셀 단위로 같다.
+	 */
+	function activate() {
+		if (active || !content) return;
+		writeContentHeight();
+		writeScroll();
+		node.classList.add('tilt-active');
+		active = true;
+
+		// 이미지가 늦게 뜨거나 페이지를 옮기면 내용 높이가 바뀐다.
+		resize = new ResizeObserver(writeContentHeight);
+		resize.observe(content);
 	}
 
 	function loop() {
@@ -280,6 +309,9 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		if (event.gamma === null && event.beta === null) return;
 		gotReading = true;
 
+		if (reduceMotion.matches) return;
+		activate();
+
 		const next = tracker.update(event.gamma ?? 0, event.beta ?? 0);
 		targetX = next.x;
 		targetY = next.y;
@@ -287,9 +319,13 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		start();
 	}
 
-	/** 축이 화면을 따라다니므로 스크롤하면 행렬을 다시 써야 한다. */
+	/**
+	 * 판은 화면에 고정돼 있으므로 내용을 스크롤 위치만큼 직접 끌어올린다.
+	 * 스크롤 이벤트는 렌더링 주기에 맞춰 오기 때문에 여기서 바로 쓰면 한 프레임
+	 * 늦지 않는다.
+	 */
 	function onScroll() {
-		if (strength > 0) writeMatrix();
+		if (active) writeScroll();
 	}
 
 	function listenToSensor() {
@@ -312,6 +348,8 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		destroy() {
 			if (frame) cancelAnimationFrame(frame);
 			clearTimeout(probe);
+			resize?.disconnect();
+			node.classList.remove('tilt-active');
 			window.removeEventListener('deviceorientation', onOrientation);
 			window.removeEventListener('tiltlight:granted', listenToSensor);
 			window.removeEventListener('scroll', onScroll);
