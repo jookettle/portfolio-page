@@ -85,12 +85,22 @@ body {
  * transform은 합성 단계에서 처리되므로 기울기와 스크롤이 매 프레임 바뀌어도
  * 다시 그리지 않는다.
  */
+:root {
+	/*
+	 * 반사빛 전체의 진하기. 판·카드·누른 카드의 번짐이 모두 이 값을 곱하므로
+	 * 한곳에서 조절하면 된다.
+	 */
+	--glow-strength: 1;
+}
+
 .float-spacer {
 	display: none;
 }
 
 .tilt-active {
 	background: #e4e4e7;
+	/* 판 뒤로 드러나는 바탕에 지금 빛의 색을 살짝 섞는다. 노을 무렵엔 따뜻하고 밤엔 푸르다. */
+	background: color-mix(in srgb, #e4e4e7 82%, rgb(var(--light-rgb, 228, 228, 231)) 18%);
 }
 
 .tilt-active .float-layer {
@@ -113,11 +123,14 @@ body {
 	/* 판이 들어올수록 모서리가 둥글어져 떠 있는 물체가 된다. */
 	border-radius: calc(var(--light-strength, 0) * 14px);
 	/*
-	 * 그림자는 광원 반대쪽으로 드리워진다. 기울이면 판 아래에서 그림자가
-	 * 미끄러져 나온다. 판이 화면을 거의 다 덮고 있어 가장자리로만 보인다.
+	 * 검은 그림자 대신 지금 빛의 색이 섞인 옅은 번짐을 빛(태양 + 기울기)의
+	 * 반대쪽으로 드리운다. 판이 화면을 거의 다 덮고 있어 가장자리로만 보인다.
 	 */
-	box-shadow: calc(var(--tilt-nx, 0) * -22px) calc(18px - var(--tilt-ny, 0) * 22px) 48px
-		rgba(24, 24, 27, calc(var(--light-strength, 0) * 0.32));
+	box-shadow: calc(var(--shadow-dx, 0) * 22px) calc(var(--shadow-dy, 0.8) * 22px) 60px
+		rgba(
+			var(--ambient-rgb, 110, 118, 135),
+			calc(var(--light-strength, 0) * var(--sun-intensity, 1) * 0.24 * var(--glow-strength, 1))
+		);
 	transform: var(--tilt-matrix, none);
 }
 
@@ -133,7 +146,7 @@ body {
 	inset: -60%;
 	z-index: 20;
 	pointer-events: none;
-	opacity: var(--light-strength, 0);
+	opacity: calc(var(--light-strength, 0) * var(--sun-intensity, 1));
 	background: linear-gradient(
 		115deg,
 		transparent 38%,
@@ -151,16 +164,37 @@ body {
 
 /*
  * 카드와 사진은 페이지보다 한 겹 위에 떠 있다. 판보다 조금 더 크게 흘러
- * 시차가 생기고, 그림자는 광원 반대쪽으로 드리워진다.
+ * 시차가 생기고, 그림자는 빛의 반대쪽으로 드리워진다.
  *
  * 실제 3D(preserve-3d)로 띄우지 않는 이유는, 판의 overflow: hidden이 안쪽의
  * 입체를 평면으로 눌러버리기 때문이다. 대신 기울기 값으로 2D 이동을 계산한다.
+ *
+ * 누르는 동안(--lift)에는 그 위에 들어 올리는 변환이 이어 붙고, 카드가 높이
+ * 뜬 만큼 그림자가 해 반대쪽으로 더 멀리, 더 흐리게 떨어진다.
+ * [data-lift] 선택자를 함께 적어 둔 건 누르는 동안의 기본 규칙보다 이 규칙이
+ * 이기게 하기 위해서다. 그렇지 않으면 누르는 순간 시차가 사라져 카드가 튄다.
  */
 .tilt-active .lit,
-.tilt-active .lit-edge {
-	transform: translate3d(calc(var(--tilt-nx, 0) * 7px), calc(var(--tilt-ny, 0) * 7px), 0);
-	box-shadow: calc(var(--tilt-nx, 0) * -9px) calc(10px - var(--tilt-ny, 0) * 9px) 22px -10px
-		rgba(24, 24, 27, calc(var(--light-strength, 0) * 0.35));
+.tilt-active .lit-edge,
+.tilt-active .lit[data-lift],
+.tilt-active .lit-edge[data-lift] {
+	transform: translate3d(calc(var(--tilt-nx, 0) * 7px), calc(var(--tilt-ny, 0) * 7px), 0)
+		var(--lift-transform, translate(0));
+	/*
+	 * 카드 아래로 카드 자신의 색(--glow)이 은은하게 번진다. 색을 못 찾은 카드는
+	 * 지금 빛의 색이 섞인 번짐으로 대신한다. 번짐이 넓고 옅어야 그림자가 아니라
+	 * 반사된 빛으로 읽힌다.
+	 */
+	box-shadow: calc(var(--shadow-dx, 0) * (8px + var(--lift, 0) * 14px))
+		calc(var(--shadow-dy, 0.8) * (8px + var(--lift, 0) * 14px)) calc(28px + var(--lift, 0) * 20px)
+		-8px
+		rgba(
+			var(--glow, var(--ambient-rgb, 110, 118, 135)),
+			calc(
+				(var(--light-strength, 0) * var(--sun-intensity, 1) * 0.3 + var(--lift, 0) * 0.15) *
+					var(--glow-strength, 1)
+			)
+		);
 }
 
 .tilt-active .float-content {
@@ -183,7 +217,10 @@ body {
 	isolation: isolate;
 }
 
-/* 사진처럼 어둡고 색이 있는 표면에서는 흰 반사광이 그대로 읽힌다. */
+/*
+ * 사진처럼 어둡고 색이 있는 표면에서는 반사광이 그대로 읽힌다.
+ * 빛의 색은 지금의 태양을 따른다(한낮은 흰빛, 노을은 주황, 밤은 푸른 달빛).
+ */
 .lit::after {
 	content: '';
 	position: absolute;
@@ -191,12 +228,12 @@ body {
 	z-index: 2;
 	border-radius: inherit;
 	pointer-events: none;
-	opacity: var(--light-strength, 0);
+	opacity: calc(var(--light-strength, 0) * var(--sun-intensity, 1));
 	background: radial-gradient(
 		70% 55% at var(--lx, 50%) var(--ly, 30%),
-		rgba(255, 255, 255, 0.9),
-		rgba(255, 255, 255, 0.3) 35%,
-		rgba(255, 255, 255, 0) 65%
+		rgba(var(--light-rgb, 255, 255, 255), 0.9),
+		rgba(var(--light-rgb, 255, 255, 255), 0.3) 35%,
+		rgba(var(--light-rgb, 255, 255, 255), 0) 65%
 	);
 	/* overlay는 어두운 부분을 검게 유지한 채 중간톤만 밝혀서 광택처럼 읽힌다.
 	   screen을 쓰면 사진 전체가 뿌옇게 뜬다. */
@@ -215,7 +252,7 @@ body {
 	padding: 1px;
 	border-radius: inherit;
 	pointer-events: none;
-	opacity: var(--light-strength, 0);
+	opacity: calc(var(--light-strength, 0) * var(--sun-intensity, 1));
 	background: radial-gradient(
 		55% 55% at var(--lx, 50%) var(--ly, 30%),
 		rgba(24, 24, 27, 0.6),
@@ -229,6 +266,32 @@ body {
 		linear-gradient(#000 0 0);
 	-webkit-mask-composite: xor;
 	mask-composite: exclude;
+}
+
+/*
+ * 누르면 떠오르는 카드. 손가락이 닿는 순간 판에서 떨어져 누른 쪽이 손가락을
+ * 향해 들리고, 떼면 스프링처럼 살짝 튕기며 내려앉는다. 값은 pressLift 액션이
+ * 매 프레임 쓴다. 누르는 동안에만 data-lift가 붙으므로 평소에는 아무 영향이 없다.
+ *
+ * 기울기 효과가 켜져 있으면 위쪽의 .tilt-active 규칙이 이 규칙을 이기고,
+ * 시차와 태양 그림자에 들어 올리는 변환을 이어 붙인다.
+ */
+.lit[data-lift],
+.lit-edge[data-lift] {
+	/* 옆 카드보다 위로 올라와야 떠 보인다. */
+	z-index: 5;
+	transform: var(--lift-transform, none);
+	box-shadow: 0 calc(var(--lift, 0) * 18px) calc(var(--lift, 0) * 40px) calc(var(--lift, 0) * -8px)
+		rgba(
+			var(--glow, 110, 118, 135),
+			calc(var(--lift, 0) * 0.35 * var(--glow-strength, 1))
+		);
+}
+
+/* 누른 자리에서 빛이 번진다. 기울기 효과가 꺼져 있어도 보이게 한다. */
+.lit[data-lift]::after,
+.lit-edge[data-lift]::before {
+	opacity: max(calc(var(--light-strength, 0) * var(--sun-intensity, 1)), var(--lift, 0));
 }
 
 /* GitHub Markdown styles - applied to .markdown-body */
