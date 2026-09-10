@@ -253,13 +253,6 @@ body {
 	}
 }
 
-@layer utilities {
-	.min-h-screen-mobile {
-		min-height: 100vh;
-		min-height: calc(var(--vh, 1vh) * 100);
-	}
-}
-
 /* 터치 디바이스에서 group-hover 효과 비활성화 */
 @media (hover: none) and (pointer: coarse) {
 	.group:hover .group-hover\:opacity-60 {
