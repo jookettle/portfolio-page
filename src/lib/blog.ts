@@ -30,7 +30,7 @@ export function applyFootnotes(
 	text: string,
 	footnotes: string[] | undefined,
 	displayCounter: { n: number } = { n: 1 },
-	arrayIdx: { n: number } = displayCounter
+	arrayIdx: { n: number } = { n: 0 }
 ): string {
 	if (!footnotes?.length || !text || text.includes('fn-marker')) return text ?? '';
 	return text.replace(/\(각주\)/g, () => {
