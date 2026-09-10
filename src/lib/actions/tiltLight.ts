@@ -147,6 +147,63 @@ const perspectiveMatrix = (d: number): Mat4 => [
 	1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, -1 / d, 0, 0, 0, 1
 ];
 
+/** 지금 화면이 폰의 기본(세로) 자세에서 돌아가 있는 각도. 0, 90, 180, 270 중 하나다. */
+export function screenAngle(): number {
+	const angle = screen.orientation?.angle;
+	// iOS Safari 16.3 이하에는 screen.orientation이 없고 window.orientation(0, 90, -90, 180)만 있다.
+	const legacy = (window as unknown as { orientation?: number }).orientation;
+	const raw = typeof angle === 'number' ? angle : typeof legacy === 'number' ? legacy : 0;
+	return ((raw % 360) + 360) % 360;
+}
+
+/**
+ * 폰 기준 기울기(gamma, beta)를 화면 기준 기울기(도)로 옮긴다. x는 화면 오른쪽이
+ * 내려간 정도, y는 화면 위쪽이 들린 정도다.
+ *
+ * deviceorientation의 각도는 폰을 세로로 든 기본 자세를 기준으로 정의되어 있다.
+ * 폰을 가로로 돌리면 화면의 좌우와 앞뒤가 폰의 앞뒤와 좌우로 뒤바뀌고, 어느
+ * 쪽으로 돌렸는지에 따라 방향도 뒤집힌다. 그대로 쓰면 가로 화면에서 좌우로
+ * 기울일 때 빛과 판이 위아래로 움직인다.
+ *
+ * 각도를 서로 맞바꾸기만 해서는 부족하다. 가로 화면에서 좌우를 맡게 되는 beta는
+ * 폰이 뒤로 젖혀진 만큼(cos) 줄어들어 측정되어, 40도 젖힌 채로 12도 기울이면 9도,
+ * 70도 가까이 세우면 세로 화면의 3분의 1밖에 반응하지 않는다. 그래서 중력 방향을
+ * 화면 좌표계로 옮긴 뒤 거기서 기울기를 직접 구한다. 세로 화면에서는 이 계산이
+ * gamma, beta와 정확히 같은 값을 내므로 세로 화면의 감각은 달라지지 않는다.
+ */
+export function toScreenTilt(gamma: number, beta: number, angle: number): { x: number; y: number } {
+	const g = (gamma * Math.PI) / 180;
+	const b = (beta * Math.PI) / 180;
+	// 세계의 위쪽을 폰 좌표계로 나타낸 것.
+	const ux = -Math.sin(g) * Math.cos(b);
+	const uy = Math.sin(b);
+	const uz = Math.cos(g) * Math.cos(b);
+
+	// 화면 좌표계로 옮긴다. 반시계로 돌린 가로 화면(90도)에서는 폰의 윗변이 화면
+	// 왼쪽을, 오른쪽 변이 화면 위쪽을 향한다.
+	let sx: number;
+	let sy: number;
+	switch (angle) {
+		case 90:
+			[sx, sy] = [-uy, ux];
+			break;
+		case 180:
+			[sx, sy] = [-ux, -uy];
+			break;
+		case 270:
+			[sx, sy] = [uy, -ux];
+			break;
+		default:
+			[sx, sy] = [ux, uy];
+	}
+
+	const deg = 180 / Math.PI;
+	return {
+		x: Math.atan2(-sx, uz) * deg,
+		y: Math.asin(Math.min(Math.max(sy, -1), 1)) * deg
+	};
+}
+
 export interface TiltTracker {
 	/** 센서 각도를 받아 화면 기준 0~1 좌표를 돌려준다. 0.5가 중립이다. */
 	update(gamma: number, beta: number): { x: number; y: number };
@@ -271,7 +328,7 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 	const distance = options?.perspective ?? 1600;
 	const lead = options?.lead ?? 2;
 
-	const tracker = createTiltTracker({ range, recenter, lead });
+	let tracker = createTiltTracker({ range, recenter, lead });
 
 	const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -373,7 +430,8 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		if (reduceMotion.matches) return;
 		activate();
 
-		const next = tracker.update(event.gamma ?? 0, event.beta ?? 0);
+		const tilt = toScreenTilt(event.gamma ?? 0, event.beta ?? 0, screenAngle());
+		const next = tracker.update(tilt.x, tilt.y);
 
 		// 손에 든 폰은 가만히 있어도 센서 값이 0.1도 안팎으로 떨린다. 그 떨림까지
 		// 따라가면 목표가 매번 조금씩 바뀌어 애니메이션이 영영 멈추지 않고, 매 프레임
@@ -388,6 +446,15 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		start();
 	}
 
+	/**
+	 * 화면을 돌리면 중립 자세를 새로 잡는다. 기울기의 축 자체가 바뀌었으므로
+	 * 돌리기 전의 기준을 그대로 쓰면 효과가 한쪽으로 확 튄다. 새 추적기는 첫
+	 * 값을 중립으로 삼으므로 판은 스르르 가운데로 돌아온다.
+	 */
+	function onRotate() {
+		tracker = createTiltTracker({ range, recenter, lead });
+	}
+
 	function listenToSensor() {
 		window.addEventListener('deviceorientation', onOrientation);
 	}
@@ -396,6 +463,9 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 	// 안드로이드처럼 그냥 되는 환경에서는 버튼 없이 곧바로 동작한다.
 	listenToSensor();
 	window.addEventListener('tiltlight:granted', listenToSensor);
+	// 옛 iOS는 screen.orientation이 없어 orientationchange만 온다. 둘 다 오면 두 번 새로 잡을 뿐이다.
+	screen.orientation?.addEventListener?.('change', onRotate);
+	window.addEventListener('orientationchange', onRotate);
 
 	// 값이 안 들어오는데 물어볼 수 있는 환경이라면, 그때만 버튼을 띄운다.
 	const probe = setTimeout(() => {
@@ -411,6 +481,8 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 			document.documentElement.classList.remove('tilt-lock');
 			window.removeEventListener('deviceorientation', onOrientation);
 			window.removeEventListener('tiltlight:granted', listenToSensor);
+			screen.orientation?.removeEventListener?.('change', onRotate);
+			window.removeEventListener('orientationchange', onRotate);
 		}
 	};
 };
