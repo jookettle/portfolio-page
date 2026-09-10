@@ -91,6 +91,11 @@ body {
 	 * 한곳에서 조절하면 된다.
 	 */
 	--glow-strength: 1;
+	/*
+	 * 자기 색을 찾지 못한 표면(검은 아이콘의 카드, 판)이 번질 때 쓰는 푸른 회색.
+	 * 검정을 번지게 하면 반사빛이 아니라 그림자로 보인다.
+	 */
+	--ambient-rgb: 110, 118, 135;
 }
 
 /*
@@ -107,8 +112,6 @@ body {
 	/* 판은 문서 흐름에서 빠지므로, 판 뒤 바탕이 화면을 채우도록 높이를 따로 준다. */
 	min-height: 100dvh;
 	background: #e4e4e7;
-	/* 판 뒤로 드러나는 바탕에 지금 빛의 색을 살짝 섞는다. 노을 무렵엔 따뜻하고 밤엔 푸르다. */
-	background: color-mix(in srgb, #e4e4e7 82%, rgb(var(--light-rgb, 228, 228, 231)) 18%);
 }
 
 .tilt-active .float-layer {
@@ -131,15 +134,15 @@ body {
 	/* 판이 들어올수록 모서리가 둥글어져 떠 있는 물체가 된다. */
 	border-radius: calc(var(--light-strength, 0) * 14px);
 	/*
-	 * 지금 빛의 색이 섞인 옅은 번짐. 판이 화면을 거의 다 덮고 있어 가장자리로만
+	 * 옅은 푸른 회색 번짐. 판이 화면을 거의 다 덮고 있어 가장자리로만
 	 * 보인다. 방향은 빛을 따라가지 않고 고정한다. 화면 전체 크기의 흐린 번짐을
 	 * 기울일 때마다 다시 그리면 모바일에서 프레임이 무너지는데, 가장자리로만
 	 * 보여서 방향이 바뀌어도 거의 티가 나지 않는다.
 	 */
 	box-shadow: 0 18px 60px
 		rgba(
-			var(--ambient-rgb, 110, 118, 135),
-			calc(var(--light-strength, 0) * var(--sun-intensity, 1) * 0.24 * var(--glow-strength, 1))
+			var(--ambient-rgb),
+			calc(var(--light-strength, 0) * 0.24 * var(--glow-strength, 1))
 		);
 	transform: var(--tilt-matrix, none);
 }
@@ -160,7 +163,7 @@ body {
 	inset: -25%;
 	z-index: 20;
 	pointer-events: none;
-	opacity: calc(var(--light-strength, 0) * var(--sun-intensity, 1));
+	opacity: var(--light-strength, 0);
 	background: linear-gradient(
 		115deg,
 		transparent 38%,
@@ -184,7 +187,7 @@ body {
  * 입체를 평면으로 눌러버리기 때문이다. 대신 기울기 값으로 2D 이동을 계산한다.
  *
  * 누르는 동안(--lift)에는 그 위에 들어 올리는 변환이 이어 붙고, 카드가 높이
- * 뜬 만큼 그림자가 해 반대쪽으로 더 멀리, 더 흐리게 떨어진다.
+ * 뜬 만큼 반사빛이 빛의 반대쪽으로 더 멀리, 더 흐리게 번진다.
  * [data-lift] 선택자를 함께 적어 둔 건 누르는 동안의 기본 규칙보다 이 규칙이
  * 이기게 하기 위해서다. 그렇지 않으면 누르는 순간 시차가 사라져 카드가 튄다.
  */
@@ -196,16 +199,16 @@ body {
 		var(--lift-transform, translate(0));
 	/*
 	 * 카드 아래로 카드 자신의 색(--glow)이 은은하게 번진다. 색을 못 찾은 카드는
-	 * 지금 빛의 색이 섞인 번짐으로 대신한다. 번짐이 넓고 옅어야 그림자가 아니라
+	 * 푸른 회색(--ambient-rgb) 번짐으로 대신한다. 번짐이 넓고 옅어야 그림자가 아니라
 	 * 반사된 빛으로 읽힌다.
 	 */
 	box-shadow: calc(var(--shadow-dx, 0) * (8px + var(--lift, 0) * 14px))
 		calc(var(--shadow-dy, 0.8) * (8px + var(--lift, 0) * 14px)) calc(28px + var(--lift, 0) * 20px)
 		-8px
 		rgba(
-			var(--glow, var(--ambient-rgb, 110, 118, 135)),
+			var(--glow, var(--ambient-rgb)),
 			calc(
-				(var(--light-strength, 0) * var(--sun-intensity, 1) * 0.3 + var(--lift, 0) * 0.15) *
+				(var(--light-strength, 0) * 0.3 + var(--lift, 0) * 0.15) *
 					var(--glow-strength, 1)
 			)
 		);
@@ -242,10 +245,7 @@ body {
 	isolation: isolate;
 }
 
-/*
- * 사진처럼 어둡고 색이 있는 표면에서는 반사광이 그대로 읽힌다.
- * 빛의 색은 지금의 태양을 따른다(한낮은 흰빛, 노을은 주황, 밤은 푸른 달빛).
- */
+/* 사진처럼 어둡고 색이 있는 표면에서는 흰 반사광이 그대로 읽힌다. */
 .lit::after {
 	content: '';
 	position: absolute;
@@ -253,12 +253,12 @@ body {
 	z-index: 2;
 	border-radius: inherit;
 	pointer-events: none;
-	opacity: calc(var(--light-strength, 0) * var(--sun-intensity, 1));
+	opacity: var(--light-strength, 0);
 	background: radial-gradient(
 		70% 55% at var(--lx, 50%) var(--ly, 30%),
-		rgba(var(--light-rgb, 255, 255, 255), 0.9),
-		rgba(var(--light-rgb, 255, 255, 255), 0.3) 35%,
-		rgba(var(--light-rgb, 255, 255, 255), 0) 65%
+		rgba(255, 255, 255, 0.9),
+		rgba(255, 255, 255, 0.3) 35%,
+		rgba(255, 255, 255, 0) 65%
 	);
 	/* overlay는 어두운 부분을 검게 유지한 채 중간톤만 밝혀서 광택처럼 읽힌다.
 	   screen을 쓰면 사진 전체가 뿌옇게 뜬다. */
@@ -266,15 +266,14 @@ body {
 }
 
 /*
- * 흰 카드의 가장자리 빛. 빛을 받는 쪽 테두리는 빛의 색으로 밝아지고(한낮엔
- * 하얗게 녹아들고 노을엔 주황빛), 반대쪽 테두리에는 카드 자신의 색이 은은하게
- * 비쳐 아래로 번지는 반사빛과 이어진다.
+ * 흰 카드의 가장자리 빛. 빛을 받는 쪽 테두리는 하얗게 녹아들고, 반대쪽
+ * 테두리에는 카드 자신의 색이 은은하게 비쳐 아래로 번지는 반사빛과 이어진다.
  *
  * 예전에는 흰 카드에서 흰빛이 안 보인다고 어두운 색을 칠했는데, 빛이 닿는 쪽이
  * 오히려 거뭇해져 테두리에 묻은 얼룩처럼 보였다.
  *
- * 태양은 멀리 있어 모든 카드에 같은 방향으로 비치므로, 빛이 오는 방향
- * (--light-angle) 하나로 선형 그라데이션을 돌린다.
+ * 광원은 멀리 있는 것으로 치고 모든 카드에 같은 방향으로 비추므로, 빛이 오는
+ * 방향(--light-angle) 하나로 선형 그라데이션을 돌린다.
  */
 .lit-edge::before {
 	content: '';
@@ -289,13 +288,13 @@ body {
 	padding: 1px;
 	border-radius: inherit;
 	pointer-events: none;
-	opacity: calc(var(--light-strength, 0) * var(--sun-intensity, 1));
+	opacity: var(--light-strength, 0);
 	background: linear-gradient(
 		var(--light-angle, 0deg),
-		rgba(var(--glow, var(--ambient-rgb, 110, 118, 135)), 0.45),
+		rgba(var(--glow, var(--ambient-rgb)), 0.45),
 		transparent 40%,
 		transparent 60%,
-		rgba(var(--light-rgb, 255, 255, 255), 1)
+		rgba(255, 255, 255, 1)
 	);
 	-webkit-mask:
 		linear-gradient(#000 0 0) content-box,
@@ -313,7 +312,7 @@ body {
  * 매 프레임 쓴다. 누르는 동안에만 data-lift가 붙으므로 평소에는 아무 영향이 없다.
  *
  * 기울기 효과가 켜져 있으면 위쪽의 .tilt-active 규칙이 이 규칙을 이기고,
- * 시차와 태양 그림자에 들어 올리는 변환을 이어 붙인다.
+ * 시차와 반사빛에 들어 올리는 변환을 이어 붙인다.
  */
 .lit[data-lift],
 .lit-edge[data-lift] {
@@ -330,7 +329,7 @@ body {
 /* 누른 자리에서 빛이 번진다. 기울기 효과가 꺼져 있어도 보이게 한다. */
 .lit[data-lift]::after,
 .lit-edge[data-lift]::before {
-	opacity: max(calc(var(--light-strength, 0) * var(--sun-intensity, 1)), var(--lift, 0));
+	opacity: max(var(--light-strength, 0), var(--lift, 0));
 }
 
 /* GitHub Markdown styles - applied to .markdown-body */

@@ -1,5 +1,4 @@
 import type { Action } from 'svelte/action';
-import { guessLocation, parseSunOverride, sunLight } from '$lib/sun';
 
 export interface TiltLightOptions {
 	/** 중립에서 이 각도(도)만큼 더 기울이면 효과가 끝까지 간다. */
@@ -74,10 +73,20 @@ const FADE_IN = 0.05;
 const VELOCITY_TRACK = 0.5;
 /** 센서 입력을 거르는 기본 정도. 아래 TARGET_DEADBAND와 함께 실측으로 정했다. */
 const INPUT_SMOOTHING = 0.3;
-/** 기울기가 빛을 태양 위치에서 얼마나 흔들 수 있는지(화면 비율). */
+/**
+ * 빛의 기본 위치(화면 비율). 가로는 가운데라 좌우 어느 쪽으로 기울여도 똑같이
+ * 움직이고, 세로는 조금 위라 가만히 있을 때 반사빛이 살짝 아래로 떨어진다.
+ *
+ * 한때 이 자리를 지금의 태양 위치가 정했는데, 해가 화면 가장자리 근처에 있으면
+ * 그쪽으로 기울일 때 빛이 화면 끝에 막혀 거의 움직이지 않았다(오후 6시 반 기준
+ * 반대쪽의 10분의 1). 판은 양쪽으로 똑같이 기우는데 빛만 한쪽에서 멈추니 어색했다.
+ */
+const LIGHT_HOME_X = 0.5;
+const LIGHT_HOME_Y = 0.3;
+/** 기울기가 빛을 기본 위치에서 얼마나 흔들 수 있는지(화면 비율). */
 const LIGHT_SWAY = 0.4;
-/** 색 없는 번짐의 바탕이 되는 푸른 회색. */
-const AMBIENT_BASE = [88, 100, 128];
+/** 반사빛이 카드에서 떨어지는 거리 배율. */
+const SHADOW_LENGTH = 1.2;
 /**
  * 기울기 목표가 이만큼(화면 비율) 이상 바뀔 때만 따라간다. 반응 범위가 15도이므로
  * 약 0.45도에 해당한다.
@@ -279,20 +288,10 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 	const content = node.querySelector<HTMLElement>('.float-content');
 	let active = false;
 
-	// 빛의 기본 위치와 색은 지금 이 순간의 태양이 정하고, 기울기는 그 위에 더해진다.
-	const location = guessLocation(
-		Intl.DateTimeFormat().resolvedOptions().timeZone,
-		new Date().getTimezoneOffset()
-	);
-	const sunOverride = parseSunOverride(window.location.search);
-	let sun = sunLight(sunOverride ?? new Date(), location.lat, location.lon);
-	let sunTimer = 0;
-
 	function writeAll() {
 		const nx = (x - 0.5) * 2;
 		const ny = (y - 0.5) * 2;
 
-		// 판: 기울기만 따른다. 태양이 섞이면 폰을 가만히 둬도 판이 해 쪽으로 기운다.
 		const tx = nx * depth * strength;
 		const ty = ny * depth * strength;
 		const ry = -nx * rotate * strength;
@@ -311,34 +310,19 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		node.style.setProperty('--tilt-nx', (nx * strength).toFixed(4));
 		node.style.setProperty('--tilt-ny', (ny * strength).toFixed(4));
 
-		// 빛: 태양 위치를 중심으로 기울기만큼 흔들린다.
-		const lx = clamp01(sun.x + nx * LIGHT_SWAY);
-		const ly = clamp01(sun.y + ny * LIGHT_SWAY);
+		// 빛: 기본 위치에서 기울기만큼 흔들린다. 화면 비율 0~1로 자르지 않는다.
+		// 자르면 기본 위치가 가장자리에 가까운 쪽으로 기울일 때 빛이 먼저 멈춰
+		// 좌우가 어긋난다. 화면 밖에 있는 빛도 그라데이션과 방향 계산에는 문제없다.
+		const lx = LIGHT_HOME_X + nx * LIGHT_SWAY;
+		const ly = LIGHT_HOME_Y + ny * LIGHT_SWAY;
 		node.style.setProperty('--lx', `${(lx * 100).toFixed(1)}%`);
 		node.style.setProperty('--ly', `${(ly * 100).toFixed(1)}%`);
 		node.style.setProperty('--light-angle', `${lightAngle(lx - 0.5, ly - 0.5).toFixed(1)}deg`);
 		node.style.setProperty('--light-strength', strength.toFixed(3));
-		node.style.setProperty('--light-rgb', sun.rgb.join(', '));
-		node.style.setProperty('--sun-intensity', sun.intensity.toFixed(3));
-		// 색을 못 찾은 표면의 번짐 색. 빛의 색만 쓰면 한낮엔 흰빛이라 흰 바탕에서
-		// 사라지므로, 푸른 회색에 섞어 어느 시각에나 옅게 보이게 한다.
-		node.style.setProperty(
-			'--ambient-rgb',
-			sun.rgb.map((c, i) => Math.round(c * 0.45 + AMBIENT_BASE[i] * 0.55)).join(', ')
-		);
 
-		// 그림자는 빛의 반대쪽으로 드리워지고, 해가 낮을수록 길어진다.
-		node.style.setProperty('--shadow-dx', (-(lx - 0.5) * 2 * sun.shadowLength).toFixed(3));
-		node.style.setProperty('--shadow-dy', (-(ly - 0.5) * 2 * sun.shadowLength).toFixed(3));
-	}
-
-	/** 해는 천천히 움직이므로 1분에 한 번이면 충분하다. */
-	function watchSun() {
-		if (sunOverride || sunTimer) return;
-		sunTimer = window.setInterval(() => {
-			sun = sunLight(new Date(), location.lat, location.lon);
-			if (active) writeAll();
-		}, 60_000);
+		// 반사빛은 빛의 반대쪽으로 번진다.
+		node.style.setProperty('--shadow-dx', (-(lx - 0.5) * 2 * SHADOW_LENGTH).toFixed(3));
+		node.style.setProperty('--shadow-dy', (-(ly - 0.5) * 2 * SHADOW_LENGTH).toFixed(3));
 	}
 
 	/**
@@ -360,7 +344,6 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		node.classList.add('tilt-active');
 		content.scrollTop = y;
 		active = true;
-		watchSun();
 	}
 
 	function loop() {
@@ -424,7 +407,6 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		destroy() {
 			if (frame) cancelAnimationFrame(frame);
 			clearTimeout(probe);
-			clearInterval(sunTimer);
 			node.classList.remove('tilt-active');
 			document.documentElement.classList.remove('tilt-lock');
 			window.removeEventListener('deviceorientation', onOrientation);
