@@ -7,6 +7,12 @@ export interface TiltLightOptions {
 	restAngle?: number;
 	/** 0~1. 클수록 빛이 즉각 따라오고, 작을수록 미끄러지듯 따라온다. */
 	smoothing?: number;
+	/**
+	 * 기울기에 따라 페이지가 움직이는 최대 거리(px). 화면 위에 살짝 떠 있는
+	 * 느낌을 주는 정도면 충분하고, 키우면 글을 읽기 어려워진다.
+	 * 방향을 뒤집고 싶으면 음수를 준다.
+	 */
+	depth?: number;
 }
 
 /**
@@ -67,6 +73,7 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 	const range = options?.range ?? 35;
 	const restAngle = options?.restAngle ?? 45;
 	const smoothing = options?.smoothing ?? 0.12;
+	const depth = options?.depth ?? 8;
 
 	const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -88,6 +95,13 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		node.style.setProperty('--lx', `${(x * 100).toFixed(1)}%`);
 		node.style.setProperty('--ly', `${(y * 100).toFixed(1)}%`);
 		node.style.setProperty('--light-strength', strength.toFixed(3));
+
+		// 빛과 같은 방향으로 페이지도 아주 조금 흐르게 해서 떠 있는 느낌을 준다.
+		// strength를 곱해두면 센서가 붙는 순간 튀지 않고 함께 스며든다.
+		const offsetX = (x - 0.5) * 2 * depth * strength;
+		const offsetY = (y - 0.5) * 2 * depth * strength;
+		node.style.setProperty('--tilt-x', `${offsetX.toFixed(2)}px`);
+		node.style.setProperty('--tilt-y', `${offsetY.toFixed(2)}px`);
 
 		const settled =
 			Math.abs(targetX - x) < SETTLE &&

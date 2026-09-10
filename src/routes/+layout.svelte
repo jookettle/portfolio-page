@@ -15,13 +15,20 @@
 	아닌 이 래퍼에 거는 이유는 루트 요소의 overflow가 뷰포트로 전파되기 때문이다.
 -->
 <div class="overflow-x-clip" use:scrollMotionBlur use:footnoteTooltip use:smoothScroll use:tiltLight>
-	<div class="max-w-5xl mx-auto px-4">
-		<Navbar/>
-		{@render children()}
-	</div>
-	<footer>
-		<div class="max-w-5xl mx-auto px-4 py-8 text-center text-sm text-zinc-800">
-			<p>© {new Date().getFullYear()} Jinpyo Joo. All rights reserved.</p>
+	<!--
+		움직이는 층은 반드시 클립 안쪽에 있어야 한다. 변형된 요소는 조상의 스크롤
+		영역을 넓히기 때문에, 클립과 같은 요소에 걸면 가로로 밀린 만큼 문서가
+		넓어져 가로 스크롤이 다시 생긴다.
+	-->
+	<div class="float-layer">
+		<div class="max-w-5xl mx-auto px-4">
+			<Navbar/>
+			{@render children()}
 		</div>
-	</footer>
+		<footer>
+			<div class="max-w-5xl mx-auto px-4 py-8 text-center text-sm text-zinc-800">
+				<p>© {new Date().getFullYear()} Jinpyo Joo. All rights reserved.</p>
+			</div>
+		</footer>
+	</div>
 </div>
