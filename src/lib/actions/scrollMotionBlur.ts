@@ -50,6 +50,11 @@ export const scrollMotionBlur: Action<HTMLElement, ScrollMotionBlurOptions | und
 	node,
 	options
 ) => {
+	// 터치 기기에서는 켜지 않는다. 스크롤할 때마다 수십 개 요소에 SVG 필터를 걸었다
+	// 떼는 일이 모바일 GPU에는 너무 무겁고, iOS에서는 필터가 붙는 순간 요소가
+	// 번쩍인다. 최신 폰에서도 스크롤이 끊기고 화면이 번쩍이던 주된 원인이었다.
+	if (window.matchMedia('(pointer: coarse)').matches) return;
+
 	// 쫀득한 스크롤이 프레임당 이동량을 낮추기 때문에, 예전보다 같은 속도감에서
 	// 훨씬 작은 값이 나온다. 그만큼 감도를 올려 잡았다.
 	const max = options?.max ?? 14;
