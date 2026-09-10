@@ -24,9 +24,10 @@
 	position: absolute !important;
 	bottom: calc(100% + 10px) !important;
 	left: 50% !important;
-	transform: translateX(-50%) translateY(-4px);
+	transform: translateX(calc(-50% + var(--fn-shift, 0px))) translateY(-4px);
 	width: max-content !important;
-	max-width: 16rem !important;
+	/* 좁은 화면에서 말풍선이 뷰포트 밖으로 밀려나지 않도록 폭을 함께 제한한다. */
+	max-width: min(16rem, calc(100vw - 2rem)) !important;
 	white-space: normal !important;
 	background: #18181b !important;
 	border-radius: 0.5rem !important;
@@ -44,7 +45,8 @@
 	content: '' !important;
 	position: absolute !important;
 	top: 100% !important;
-	left: 50% !important;
+	/* 말풍선이 밀려난 만큼 꼬리를 반대로 되돌려 계속 각주를 가리키게 한다. */
+	left: calc(50% - var(--fn-shift, 0px)) !important;
 	transform: translateX(-50%) !important;
 	border: 5px solid transparent !important;
 	border-top-color: #18181b !important;
@@ -53,7 +55,7 @@
 .fn-marker:focus .fn-tooltip {
 	visibility: visible !important;
 	opacity: 1 !important;
-	transform: translateX(-50%) translateY(0) !important;
+	transform: translateX(calc(-50% + var(--fn-shift, 0px))) translateY(0) !important;
 }
 
 @font-face {
