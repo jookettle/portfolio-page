@@ -23,8 +23,13 @@ const RESCAN_FRAMES = 15;
 /**
  * 필터를 걸 블록들. 문서 전체를 한 덩어리로 그리는 대신 이 단위로 나눠 걸면,
  * 화면에 보이는 것만 처리하면 되므로 훨씬 가볍다.
+ *
+ * 잎사귀 쪽 요소만 넣어야 한다. 중첩 제거가 바깥쪽을 남기는 방식이라
+ * section이나 div 같은 큰 컨테이너를 넣으면 전부 하나로 합쳐져, 문서 전체에
+ * 필터를 걸던 처음 상태로 되돌아간다.
  */
-const BLOCKS = 'img, p, h1, h2, h3, h4, li, blockquote, pre, table';
+const BLOCKS =
+	'img, p, h1, h2, h3, h4, h5, h6, li, blockquote, pre, table, a, span, figure, button';
 
 /**
  * 스크롤 속도에 따라 세로 모션블러를 거는 액션.
@@ -47,8 +52,8 @@ export const scrollMotionBlur: Action<HTMLElement, ScrollMotionBlurOptions | und
 ) => {
 	// 쫀득한 스크롤이 프레임당 이동량을 낮추기 때문에, 예전보다 같은 속도감에서
 	// 훨씬 작은 값이 나온다. 그만큼 감도를 올려 잡았다.
-	const max = options?.max ?? 9;
-	const sensitivity = options?.sensitivity ?? 0.32;
+	const max = options?.max ?? 14;
+	const sensitivity = options?.sensitivity ?? 0.4;
 	const smoothing = options?.smoothing ?? 0.7;
 	const blocks = options?.blocks ?? BLOCKS;
 
