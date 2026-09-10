@@ -72,6 +72,76 @@ body {
 }
 
 /*
+ * 조리개 효과. 우클릭하거나 폰을 기울여 움직이면 depthOfField 액션이 화면에 보이는
+ * 요소마다 깊이를 달아 준다. 가까울수록 덜 흐리고 멀수록 더 흐리며, 초점이 맞은
+ * 대상과 누르고 있는 카드는 선명하다. 아주 미세한 흐림이라 두 값으로 조절한다.
+ */
+:root {
+	/* 페이지 표면의 글자. */
+	--dof-far: 0.8px;
+	/* 페이지 위에 떠 있는 카드와 사진. */
+	--dof-near: 0.3px;
+}
+
+[data-dof='far'] {
+	filter: blur(var(--dof-far));
+}
+
+[data-dof='near'] {
+	filter: blur(var(--dof-near));
+}
+
+[data-dof='focus'],
+[data-dof][data-lift] {
+	filter: none;
+}
+
+/* 데스크톱에서만 스르르 흐려지고 풀린다. 폰에서 전환까지 돌리면 수십 개 요소를 매 프레임 다시 그려야 한다. */
+@media (hover: hover) and (pointer: fine) {
+	[data-dof] {
+		transition: filter 0.3s ease;
+	}
+}
+
+/*
+ * 선택은 글자에만 된다. 이미지·아이콘·버튼·카드는 선택되지 않는다.
+ * 카드는 누르면 떠오르는 조작 대상이라, 꾹 누를 때 카드 안 글자가 함께
+ * 선택되면 효과를 가린다. 포스트 카드는 링크가 사진을 품고 있어 :has로 잡는다.
+ */
+img,
+svg,
+button,
+.lit,
+.lit-edge,
+a:has(.lit) {
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+/*
+ * 터치 기기에서 꾹 눌렀을 때 뜨는 브라우저 메뉴를 막는다. 이미지 저장 메뉴,
+ * 링크 미리보기, 끌어서 옮기기가 여기에 해당한다(아이폰). 안드로이드는 같은
+ * 메뉴를 contextmenu 이벤트로 띄우므로 longPressGuard 액션이 따로 막는다.
+ * 데스크톱의 우클릭 메뉴와 이미지 끌기는 건드리지 않도록 터치 기기로 한정한다.
+ */
+@media (hover: none) and (pointer: coarse) {
+	img,
+	a,
+	.lit,
+	.lit-edge {
+		-webkit-touch-callout: none;
+		-webkit-user-drag: none;
+	}
+
+	/* 누르는 동안 카드 위에 덮이는 회색 강조 상자도 없앤다. 떠오르는 효과가 대신 알려 준다. */
+	.lit,
+	.lit-edge,
+	a:has(.lit) {
+		-webkit-tap-highlight-color: transparent;
+	}
+}
+
+/*
  * 기울기에 따라 화면이 떠 있는 판처럼 기운다.
  *
  * 평소에는 셋 다 평범한 블록이다. 기울기 센서가 값을 보내기 시작하면 액션이
