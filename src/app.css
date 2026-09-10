@@ -110,11 +110,57 @@ body {
 	height: 100lvh;
 	overflow: hidden;
 	background: #fff;
-	/* 판이 들어올수록 모서리가 둥글어지고 그림자가 짙어져 떠 있는 물체가 된다. */
+	/* 판이 들어올수록 모서리가 둥글어져 떠 있는 물체가 된다. */
 	border-radius: calc(var(--light-strength, 0) * 14px);
-	box-shadow: 0 calc(var(--light-strength, 0) * 18px) calc(var(--light-strength, 0) * 40px)
-		rgba(24, 24, 27, calc(var(--light-strength, 0) * 0.28));
+	/*
+	 * 그림자는 광원 반대쪽으로 드리워진다. 기울이면 판 아래에서 그림자가
+	 * 미끄러져 나온다. 판이 화면을 거의 다 덮고 있어 가장자리로만 보인다.
+	 */
+	box-shadow: calc(var(--tilt-nx, 0) * -22px) calc(18px - var(--tilt-ny, 0) * 22px) 48px
+		rgba(24, 24, 27, calc(var(--light-strength, 0) * 0.32));
 	transform: var(--tilt-matrix, none);
+}
+
+/*
+ * 유리 위를 스치는 무지갯빛 반사. 화면(판)에 붙어 있으므로 스크롤해도
+ * 제자리이고, 기울일 때만 흐른다. 실제 유리에 비친 조명처럼 기울이는 방향과
+ * 반대로 흘러, 내용과 반사가 서로 엇갈리며 움직인다.
+ * 흰 바탕에서도 보이도록 옅은 색을 섞되 글자를 가리지 않을 만큼만 얹는다.
+ */
+.tilt-active .float-layer::after {
+	content: '';
+	position: absolute;
+	inset: -60%;
+	z-index: 20;
+	pointer-events: none;
+	opacity: var(--light-strength, 0);
+	background: linear-gradient(
+		115deg,
+		transparent 38%,
+		rgba(255, 150, 190, 0.07) 45%,
+		rgba(150, 200, 255, 0.09) 50%,
+		rgba(170, 255, 210, 0.07) 55%,
+		transparent 62%
+	);
+	transform: translate3d(
+		calc(var(--tilt-nx, 0) * -28%),
+		calc(var(--tilt-ny, 0) * -28%),
+		0
+	);
+}
+
+/*
+ * 카드와 사진은 페이지보다 한 겹 위에 떠 있다. 판보다 조금 더 크게 흘러
+ * 시차가 생기고, 그림자는 광원 반대쪽으로 드리워진다.
+ *
+ * 실제 3D(preserve-3d)로 띄우지 않는 이유는, 판의 overflow: hidden이 안쪽의
+ * 입체를 평면으로 눌러버리기 때문이다. 대신 기울기 값으로 2D 이동을 계산한다.
+ */
+.tilt-active .lit,
+.tilt-active .lit-edge {
+	transform: translate3d(calc(var(--tilt-nx, 0) * 7px), calc(var(--tilt-ny, 0) * 7px), 0);
+	box-shadow: calc(var(--tilt-nx, 0) * -9px) calc(10px - var(--tilt-ny, 0) * 9px) 22px -10px
+		rgba(24, 24, 27, calc(var(--light-strength, 0) * 0.35));
 }
 
 .tilt-active .float-content {

@@ -252,6 +252,10 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 
 		const value = m.map((n) => Number(n.toFixed(6))).join(',');
 		node.style.setProperty('--tilt-matrix', `matrix3d(${value})`);
+
+		// 그림자와 떠 있는 카드, 유리 반사는 모두 이 두 값에서 CSS가 직접 계산한다.
+		node.style.setProperty('--tilt-nx', (nx * strength).toFixed(4));
+		node.style.setProperty('--tilt-ny', (ny * strength).toFixed(4));
 	}
 
 	function writeScroll() {
