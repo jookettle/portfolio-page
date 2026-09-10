@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import { applyFootnotes } from '$lib/blog';
 	import { base } from '$app/paths';
 	export let data: {
@@ -107,10 +107,10 @@
 			<h2 class="text-lg font-semibold mb-4">History</h2>
 			<div class="space-y-3">
 				<!-- Machobot -->
-				<div class="flex gap-3 flex-row-reverse">
+				<div class="group flex gap-3 flex-row-reverse">
 					<div class="relative flex flex-col items-center pt-1">
 						<div class="w-2 h-2 rounded-full bg-zinc-400 relative z-[1]"></div>
-						<div class="w-0.5 h-14 bg-zinc-300 mt-2"></div>
+						<div class="w-0.5 h-14 bg-zinc-300 mt-2 group-last:hidden"></div>
 					</div>
 					<div class="pb-3">
 						<div class="flex items-center justify-between gap-2">
@@ -121,10 +121,10 @@
 					</div>
 				</div>
 				<!-- Furpic -->
-				<div class="flex gap-3 flex-row-reverse">
+				<div class="group flex gap-3 flex-row-reverse">
 					<div class="relative flex flex-col items-center pt-1">
 						<div class="w-2 h-2 rounded-full bg-zinc-400 relative z-[1]"></div>
-						<div class="w-0.5 h-14 bg-zinc-300 mt-2"></div>
+						<div class="w-0.5 h-14 bg-zinc-300 mt-2 group-last:hidden"></div>
 					</div>
 					<div class="pb-3">
 						<div class="flex items-center justify-between gap-2">
@@ -135,10 +135,10 @@
 					</div>
 				</div>
 				<!-- freelencer -->
-				<div class="flex gap-3 flex-row-reverse">
+				<div class="group flex gap-3 flex-row-reverse">
 					<div class="relative flex flex-col items-center pt-1">
 						<div class="w-2 h-2 rounded-full bg-zinc-400 relative z-[1]"></div>
-						<div class="w-0.5 h-14 bg-zinc-300 mt-2"></div>
+						<div class="w-0.5 h-14 bg-zinc-300 mt-2 group-last:hidden"></div>
 					</div>
 					<div class="pb-3">
 						<div class="flex items-center justify-between gap-2">
@@ -146,20 +146,6 @@
 							<p class="text-xs text-zinc-500">2024 -</p>
 						</div>
 						<p class="text-xs text-zinc-600">Web Designer / Full-stack Developer</p>
-					</div>
-				</div>
-				<!-- ZeroSUM -->
-				<div class="flex gap-3 flex-row-reverse">
-					<div class="relative flex flex-col items-center pt-1">
-						<div class="w-2 h-2 rounded-full bg-zinc-400 relative z-[1]"></div>
-						<div class="w-0.5 h-14 bg-zinc-300 mt-2"></div>
-					</div>
-					<div class="pb-3">
-						<div class="flex items-center justify-between gap-2">
-							<h3 class="font-semibold text-sm text-zinc-900">ZeroSUM</h3>
-							<p class="text-xs text-zinc-500">2026 -</p>
-						</div>
-						<p class="text-xs text-zinc-600">Leader (학교 개발 동아리)</p>
 					</div>
 				</div>
 			</div>
@@ -174,7 +160,7 @@
 	{#if data.posts && data.posts.length}
 		{@const pageCounter = { n: 1 }}
 		<ul class="grid grid-cols-1 gap-6 sm:grid-cols-3">
-			{#each data.posts as post}
+			{#each data.posts as post (post.slug)}
 				{@const cardIdx = { n: 0 }}
 				<li class="group">
 					<a href={`${base}/blog/${post.slug}` }>
