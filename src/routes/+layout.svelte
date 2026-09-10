@@ -9,7 +9,6 @@
 	import { pressLift } from '$lib/actions/pressLift';
 	import { reflectedGlow } from '$lib/actions/reflectedGlow';
 	import { longPressGuard } from '$lib/actions/longPressGuard';
-	import { depthOfField } from '$lib/actions/depthOfField';
 	import '../app.css';
 	let { children } = $props();
 
@@ -41,7 +40,7 @@
 	달리 스크롤 컨테이너를 만들지 않아 세로 스크롤에는 영향이 없다. html/body가
 	아닌 이 래퍼에 거는 이유는 루트 요소의 overflow가 뷰포트로 전파되기 때문이다.
 -->
-<div class="overflow-x-clip" use:scrollMotionBlur use:footnoteTooltip use:smoothScroll use:tiltLight use:pressLift use:reflectedGlow use:longPressGuard use:depthOfField>
+<div class="overflow-x-clip" use:scrollMotionBlur use:footnoteTooltip use:smoothScroll use:tiltLight use:pressLift use:reflectedGlow use:longPressGuard>
 	<!--
 		기울기 센서가 켜지면 .float-layer가 화면 크기로 고정된 판이 되고, 판 전체가
 		기운다. 내용(.float-content)은 판 안에서 브라우저의 기본 스크롤로 움직인다.

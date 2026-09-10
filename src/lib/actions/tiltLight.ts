@@ -96,18 +96,6 @@ const SHADOW_LENGTH = 1.2;
  * 떨리면 21번). 100ms에 걸쳐 3도 기울였을 때 목표는 100ms 만에 따라잡는다.
  */
 const TARGET_DEADBAND = 0.015;
-/**
- * 조리개 효과를 켤 만한 '의도한 움직임'. 목표가 이벤트마다 이 속도(화면 비율)를
- * 넘는 일이 이만큼 연달아 이어져야 한다. 한 번의 값만으로는 손이 많이 떨릴 때와
- * 일부러 기울일 때가 겹쳐 가를 수 없지만, 떨림은 들쭉날쭉하고 의도한 움직임은
- * 이어진다는 차이로 가를 수 있다.
- *
- * 가상 센서로 재서 정했다. 가만히 들고 있을 때, 손이 많이 떨릴 때, 읽으면서 손이
- * 천천히 흐를 때(초당 2도)는 10초 동안 한 번도 켜지지 않고, 초당 20도 안팎의
- * 기울임에는 100ms 만에 켜진다.
- */
-const MOTION_SPEED = 0.0075;
-const MOTION_STREAK = 5;
 
 const clamp01 = (n: number) => Math.min(Math.max(n, 0), 1);
 
@@ -299,8 +287,6 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 
 	const content = node.querySelector<HTMLElement>('.float-content');
 	let active = false;
-	let lastOutput: { x: number; y: number } | null = null;
-	let motionStreak = 0;
 
 	function writeAll() {
 		const nx = (x - 0.5) * 2;
@@ -388,12 +374,6 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		activate();
 
 		const next = tracker.update(event.gamma ?? 0, event.beta ?? 0);
-
-		// 의도한 움직임이 이어지면 조리개 효과(depthOfField)에 알린다.
-		const speed = lastOutput ? Math.hypot(next.x - lastOutput.x, next.y - lastOutput.y) : 0;
-		lastOutput = next;
-		motionStreak = speed > MOTION_SPEED ? motionStreak + 1 : 0;
-		if (motionStreak >= MOTION_STREAK) window.dispatchEvent(new Event('tiltlight:motion'));
 
 		// 손에 든 폰은 가만히 있어도 센서 값이 0.1도 안팎으로 떨린다. 그 떨림까지
 		// 따라가면 목표가 매번 조금씩 바뀌어 애니메이션이 영영 멈추지 않고, 매 프레임
