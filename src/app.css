@@ -71,6 +71,65 @@ body {
 	-moz-osx-font-smoothing: grayscale;
 }
 
+/*
+ * 기울기 광원. 좌표(--lx / --ly)와 세기(--light-strength)는 상위에서 상속받으므로
+ * 요소마다 계산할 필요가 없고, 화면 전체의 빛이 한 방향으로 함께 쓸린다.
+ * 센서가 없거나 허가를 받지 못하면 세기가 0이라 아무것도 그려지지 않는다.
+ */
+.lit,
+.lit-edge {
+	position: relative;
+	isolation: isolate;
+}
+
+/* 사진처럼 어둡고 색이 있는 표면에서는 흰 반사광이 그대로 읽힌다. */
+.lit::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	border-radius: inherit;
+	pointer-events: none;
+	opacity: var(--light-strength, 0);
+	background: radial-gradient(
+		70% 55% at var(--lx, 50%) var(--ly, 30%),
+		rgba(255, 255, 255, 0.9),
+		rgba(255, 255, 255, 0.3) 35%,
+		rgba(255, 255, 255, 0) 65%
+	);
+	/* overlay는 어두운 부분을 검게 유지한 채 중간톤만 밝혀서 광택처럼 읽힌다.
+	   screen을 쓰면 사진 전체가 뿌옇게 뜬다. */
+	mix-blend-mode: overlay;
+}
+
+/*
+ * 흰 카드 위에서는 흰 반사광이 보이지 않는다. 대신 테두리를 따라 빛이
+ * 지나가게 해서 같은 광원을 공유하는 것처럼 보이게 한다.
+ */
+.lit-edge::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	padding: 1px;
+	border-radius: inherit;
+	pointer-events: none;
+	opacity: var(--light-strength, 0);
+	background: radial-gradient(
+		55% 55% at var(--lx, 50%) var(--ly, 30%),
+		rgba(24, 24, 27, 0.6),
+		rgba(24, 24, 27, 0) 70%
+	);
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+}
+
 /* GitHub Markdown styles - applied to .markdown-body */
 @layer base {
 	.markdown-body {
