@@ -35,7 +35,7 @@
 					<li class="group">
 						<a href={`${base}/blog/${post.slug}`} class="flex items-center gap-4 py-5">
 							<div
-								class="hidden h-20 w-28 shrink-0 overflow-hidden rounded-2xl border border-zinc-200 sm:block"
+								class="lit hidden h-20 w-28 shrink-0 overflow-hidden rounded-2xl border border-zinc-200 sm:block"
 							>
 								{#if post.metadata.image}
 									<img

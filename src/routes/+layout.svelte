@@ -3,6 +3,7 @@
 	import { scrollMotionBlur } from '$lib/actions/scrollMotionBlur';
 	import { footnoteTooltip } from '$lib/actions/footnoteTooltip';
 	import { smoothScroll } from '$lib/actions/smoothScroll';
+	import { tiltLight } from '$lib/actions/tiltLight';
 	import '../app.css';
 	let { children } = $props();
 </script>
@@ -13,7 +14,7 @@
 	달리 스크롤 컨테이너를 만들지 않아 세로 스크롤에는 영향이 없다. html/body가
 	아닌 이 래퍼에 거는 이유는 루트 요소의 overflow가 뷰포트로 전파되기 때문이다.
 -->
-<div class="overflow-x-clip" use:scrollMotionBlur use:footnoteTooltip use:smoothScroll>
+<div class="overflow-x-clip" use:scrollMotionBlur use:footnoteTooltip use:smoothScroll use:tiltLight>
 	<div class="max-w-5xl mx-auto px-4">
 		<Navbar/>
 		{@render children()}
