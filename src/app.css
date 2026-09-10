@@ -93,11 +93,19 @@ body {
 	--glow-strength: 1;
 }
 
-.float-spacer {
-	display: none;
+/*
+ * 판 모드에서는 문서 자체가 스크롤되지 않게 묶는다. 스크롤은 판 안의 내용이
+ * 맡는다. 문서가 스크롤되지 않으니 모바일 툴바가 스크롤 도중 들락거리지도 않는다.
+ */
+.tilt-lock,
+.tilt-lock body {
+	height: 100%;
+	overflow: hidden;
 }
 
 .tilt-active {
+	/* 판은 문서 흐름에서 빠지므로, 판 뒤 바탕이 화면을 채우도록 높이를 따로 준다. */
+	min-height: 100dvh;
 	background: #e4e4e7;
 	/* 판 뒤로 드러나는 바탕에 지금 빛의 색을 살짝 섞는다. 노을 무렵엔 따뜻하고 밤엔 푸르다. */
 	background: color-mix(in srgb, #e4e4e7 82%, rgb(var(--light-rgb, 228, 228, 231)) 18%);
@@ -123,10 +131,12 @@ body {
 	/* 판이 들어올수록 모서리가 둥글어져 떠 있는 물체가 된다. */
 	border-radius: calc(var(--light-strength, 0) * 14px);
 	/*
-	 * 검은 그림자 대신 지금 빛의 색이 섞인 옅은 번짐을 빛(태양 + 기울기)의
-	 * 반대쪽으로 드리운다. 판이 화면을 거의 다 덮고 있어 가장자리로만 보인다.
+	 * 지금 빛의 색이 섞인 옅은 번짐. 판이 화면을 거의 다 덮고 있어 가장자리로만
+	 * 보인다. 방향은 빛을 따라가지 않고 고정한다. 화면 전체 크기의 흐린 번짐을
+	 * 기울일 때마다 다시 그리면 모바일에서 프레임이 무너지는데, 가장자리로만
+	 * 보여서 방향이 바뀌어도 거의 티가 나지 않는다.
 	 */
-	box-shadow: calc(var(--shadow-dx, 0) * 22px) calc(var(--shadow-dy, 0.8) * 22px) 60px
+	box-shadow: 0 18px 60px
 		rgba(
 			var(--ambient-rgb, 110, 118, 135),
 			calc(var(--light-strength, 0) * var(--sun-intensity, 1) * 0.24 * var(--glow-strength, 1))
@@ -139,11 +149,15 @@ body {
  * 제자리이고, 기울일 때만 흐른다. 실제 유리에 비친 조명처럼 기울이는 방향과
  * 반대로 흘러, 내용과 반사가 서로 엇갈리며 움직인다.
  * 흰 바탕에서도 보이도록 옅은 색을 섞되 글자를 가리지 않을 만큼만 얹는다.
+ *
+ * 흐를 여유를 두느라 판보다 크게 만들되 너무 키우지는 않는다. 예전에는 판의
+ * 2.2배(면적 약 4.8배)였는데, 모바일 GPU 메모리를 크게 잡아먹어 스크롤 중 화면
+ * 조각이 비는 원인이 되었다.
  */
 .tilt-active .float-layer::after {
 	content: '';
 	position: absolute;
-	inset: -60%;
+	inset: -25%;
 	z-index: 20;
 	pointer-events: none;
 	opacity: calc(var(--light-strength, 0) * var(--sun-intensity, 1));
@@ -156,8 +170,8 @@ body {
 		transparent 62%
 	);
 	transform: translate3d(
-		calc(var(--tilt-nx, 0) * -28%),
-		calc(var(--tilt-ny, 0) * -28%),
+		calc(var(--tilt-nx, 0) * -16%),
+		calc(var(--tilt-ny, 0) * -16%),
 		0
 	);
 }
@@ -197,13 +211,24 @@ body {
 		);
 }
 
+/*
+ * 판 안의 내용은 브라우저의 기본 스크롤로 움직인다. 기본 스크롤은 합성 단계에서
+ * 처리되어 화면 주사율 그대로 매끄럽다.
+ *
+ * 판 자체(.float-layer)가 아니라 그 안쪽을 스크롤 영역으로 삼는다. 판이 스크롤되면
+ * 판에 붙은 유리 반사(::after)도 내용과 함께 흘러가 버리기 때문이다.
+ */
 .tilt-active .float-content {
-	transform: translate3d(0, var(--scroll-offset, 0px), 0);
-}
-
-.tilt-active .float-spacer {
-	display: block;
-	height: var(--content-height, 0px);
+	height: 100%;
+	overflow-x: hidden;
+	overflow-y: auto;
+	/* 끝에 닿았을 때 스크롤이 잠긴 문서로 번져 출렁이지 않게 한다. */
+	overscroll-behavior: contain;
+	/*
+	 * 판은 툴바 뒤까지 내려가 있으므로(100lvh), 그만큼 아래 여백을 줘야 마지막
+	 * 내용을 툴바 위로 끌어올려 볼 수 있다.
+	 */
+	padding-bottom: calc(100lvh - 100dvh);
 }
 
 /*
@@ -241,22 +266,36 @@ body {
 }
 
 /*
- * 흰 카드 위에서는 흰 반사광이 보이지 않는다. 대신 테두리를 따라 빛이
- * 지나가게 해서 같은 광원을 공유하는 것처럼 보이게 한다.
+ * 흰 카드의 가장자리 빛. 빛을 받는 쪽 테두리는 빛의 색으로 밝아지고(한낮엔
+ * 하얗게 녹아들고 노을엔 주황빛), 반대쪽 테두리에는 카드 자신의 색이 은은하게
+ * 비쳐 아래로 번지는 반사빛과 이어진다.
+ *
+ * 예전에는 흰 카드에서 흰빛이 안 보인다고 어두운 색을 칠했는데, 빛이 닿는 쪽이
+ * 오히려 거뭇해져 테두리에 묻은 얼룩처럼 보였다.
+ *
+ * 태양은 멀리 있어 모든 카드에 같은 방향으로 비치므로, 빛이 오는 방향
+ * (--light-angle) 하나로 선형 그라데이션을 돌린다.
  */
 .lit-edge::before {
 	content: '';
 	position: absolute;
-	inset: 0;
+	/*
+	 * 실제 테두리 위에 겹친다. inset: 0이면 테두리 바로 안쪽에 그려져 그 부분만
+	 * 선이 두 줄로 보인다. 이 상자는 카드의 바깥 테두리와 크기가 같으므로
+	 * 둥근 모서리도 그대로 물려받으면 딱 맞는다.
+	 */
+	inset: -1px;
 	z-index: 2;
 	padding: 1px;
 	border-radius: inherit;
 	pointer-events: none;
 	opacity: calc(var(--light-strength, 0) * var(--sun-intensity, 1));
-	background: radial-gradient(
-		55% 55% at var(--lx, 50%) var(--ly, 30%),
-		rgba(24, 24, 27, 0.6),
-		rgba(24, 24, 27, 0) 70%
+	background: linear-gradient(
+		var(--light-angle, 0deg),
+		rgba(var(--glow, var(--ambient-rgb, 110, 118, 135)), 0.45),
+		transparent 40%,
+		transparent 60%,
+		rgba(var(--light-rgb, 255, 255, 255), 1)
 	);
 	-webkit-mask:
 		linear-gradient(#000 0 0) content-box,

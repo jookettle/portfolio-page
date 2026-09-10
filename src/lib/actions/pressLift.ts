@@ -1,4 +1,5 @@
 import type { Action } from 'svelte/action';
+import { lightAngle } from './tiltLight';
 
 /** 들어 올렸을 때 커지는 비율. */
 const LIFT_SCALE = 0.045;
@@ -104,10 +105,13 @@ export const pressLift: Action<HTMLElement> = (node) => {
 		const ly = s.homeY === null ? s.fingerY : lerp(s.homeY, s.fingerY, t);
 		s.el.style.setProperty('--lx', `${lx.toFixed(1)}%`);
 		s.el.style.setProperty('--ly', `${ly.toFixed(1)}%`);
+		// 가장자리 빛도 누른 자리를 향한다. 위치를 보간한 뒤 각도를 구하므로
+		// 각도가 360도를 넘나들며 한 바퀴 휙 도는 일이 없다.
+		s.el.style.setProperty('--light-angle', `${lightAngle(lx - 50, ly - 50).toFixed(1)}deg`);
 	}
 
 	function clear(s: Spring) {
-		for (const name of ['--lift', '--lift-transform', '--lx', '--ly']) {
+		for (const name of ['--lift', '--lift-transform', '--lx', '--ly', '--light-angle']) {
 			s.el.style.removeProperty(name);
 		}
 		delete s.el.dataset.lift;

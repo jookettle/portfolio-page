@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { Snapshot } from '@sveltejs/kit';
+	import { afterNavigate } from '$app/navigation';
 	import Navbar from '$lib/components/navbar.svelte';
 	import { scrollMotionBlur } from '$lib/actions/scrollMotionBlur';
 	import { footnoteTooltip } from '$lib/actions/footnoteTooltip';
@@ -8,6 +10,27 @@
 	import { reflectedGlow } from '$lib/actions/reflectedGlow';
 	import '../app.css';
 	let { children } = $props();
+
+	let scroller: HTMLElement | undefined = $state();
+
+	/*
+	 * 판 모드에서는 문서 대신 판 안의 내용(.float-content)이 스크롤된다. SvelteKit은
+	 * 문서의 스크롤 위치만 되돌려 주므로 판의 스크롤 위치는 여기서 직접 챙긴다.
+	 */
+	const inPane = () => !!scroller?.closest('.tilt-active');
+
+	// 뒤로·앞으로 가기 때 원래 보던 위치로 돌려놓는다.
+	export const snapshot: Snapshot<number> = {
+		capture: () => scroller?.scrollTop ?? 0,
+		restore: (y) => {
+			if (scroller && inPane()) scroller.scrollTop = y;
+		}
+	};
+
+	// 새 페이지는 맨 위에서 시작한다. 뒤로·앞으로 가기는 위의 snapshot이 맡는다.
+	afterNavigate(({ type }) => {
+		if (type !== 'popstate' && scroller && inPane()) scroller.scrollTop = 0;
+	});
 </script>
 
 <!--
@@ -19,11 +42,11 @@
 <div class="overflow-x-clip" use:scrollMotionBlur use:footnoteTooltip use:smoothScroll use:tiltLight use:pressLift use:reflectedGlow>
 	<!--
 		기울기 센서가 켜지면 .float-layer가 화면 크기로 고정된 판이 되고, 판 전체가
-		기운다. 내용(.float-content)은 판 안에서 스크롤 위치만큼 끌어올려진다.
+		기운다. 내용(.float-content)은 판 안에서 브라우저의 기본 스크롤로 움직인다.
 		센서가 없으면 둘 다 평범한 블록이라 아무것도 달라지지 않는다.
 	-->
 	<div class="float-layer">
-		<div class="float-content">
+		<div class="float-content" bind:this={scroller}>
 			<div class="max-w-5xl mx-auto px-4">
 				<Navbar/>
 				{@render children()}
@@ -35,6 +58,4 @@
 			</footer>
 		</div>
 	</div>
-	<!-- 판이 문서 흐름에서 빠진 동안 문서 높이를 대신 채워, 브라우저가 평소처럼 스크롤하게 한다. -->
-	<div class="float-spacer" aria-hidden="true"></div>
 </div>
