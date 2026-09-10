@@ -1,4 +1,5 @@
 import type { Action } from 'svelte/action';
+import { guessLocation, parseSunOverride, sunLight } from '$lib/sun';
 
 export interface TiltLightOptions {
 	/** 중립에서 이 각도(도)만큼 더 기울이면 효과가 끝까지 간다. */
@@ -71,6 +72,10 @@ const PROBE_MS = 1200;
 const FADE_IN = 0.05;
 /** 각속도 추정의 반응 속도(0~1). 높을수록 최근 움직임을 크게 반영한다. */
 const VELOCITY_TRACK = 0.5;
+/** 기울기가 빛을 태양 위치에서 얼마나 흔들 수 있는지(화면 비율). */
+const LIGHT_SWAY = 0.4;
+/** 색 없는 번짐의 바탕이 되는 푸른 회색. */
+const AMBIENT_BASE = [88, 100, 128];
 
 const clamp01 = (n: number) => Math.min(Math.max(n, 0), 1);
 const clamp = (n: number, lo: number, hi: number) => Math.min(Math.max(n, lo), hi);
@@ -221,9 +226,9 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 
 	const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-	// 화면 기준 0~1 좌표. 살짝 위쪽에서 비추는 것이 기본 자세다.
+	// 기울기(0~1, 0.5가 중립). 판의 움직임은 오직 이 값만 따른다.
 	let targetX = 0.5;
-	let targetY = 0.3;
+	let targetY = 0.5;
 	let x = targetX;
 	let y = targetY;
 	let strength = 0;
@@ -235,10 +240,20 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 	let active = false;
 	let resize: ResizeObserver | null = null;
 
-	function writeMatrix() {
+	// 빛의 기본 위치와 색은 지금 이 순간의 태양이 정하고, 기울기는 그 위에 더해진다.
+	const location = guessLocation(
+		Intl.DateTimeFormat().resolvedOptions().timeZone,
+		new Date().getTimezoneOffset()
+	);
+	const sunOverride = parseSunOverride(window.location.search);
+	let sun = sunLight(sunOverride ?? new Date(), location.lat, location.lon);
+	let sunTimer = 0;
+
+	function writeAll() {
 		const nx = (x - 0.5) * 2;
 		const ny = (y - 0.5) * 2;
 
+		// 판: 기울기만 따른다. 태양이 섞이면 폰을 가만히 둬도 판이 해 쪽으로 기운다.
 		const tx = nx * depth * strength;
 		const ty = ny * depth * strength;
 		const ry = -nx * rotate * strength;
@@ -253,9 +268,37 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		const value = m.map((n) => Number(n.toFixed(6))).join(',');
 		node.style.setProperty('--tilt-matrix', `matrix3d(${value})`);
 
-		// 그림자와 떠 있는 카드, 유리 반사는 모두 이 두 값에서 CSS가 직접 계산한다.
+		// 떠 있는 카드의 시차와 유리 반사는 판과 같은 기울기를 쓴다.
 		node.style.setProperty('--tilt-nx', (nx * strength).toFixed(4));
 		node.style.setProperty('--tilt-ny', (ny * strength).toFixed(4));
+
+		// 빛: 태양 위치를 중심으로 기울기만큼 흔들린다.
+		const lx = clamp01(sun.x + nx * LIGHT_SWAY);
+		const ly = clamp01(sun.y + ny * LIGHT_SWAY);
+		node.style.setProperty('--lx', `${(lx * 100).toFixed(1)}%`);
+		node.style.setProperty('--ly', `${(ly * 100).toFixed(1)}%`);
+		node.style.setProperty('--light-strength', strength.toFixed(3));
+		node.style.setProperty('--light-rgb', sun.rgb.join(', '));
+		node.style.setProperty('--sun-intensity', sun.intensity.toFixed(3));
+		// 색을 못 찾은 표면의 번짐 색. 빛의 색만 쓰면 한낮엔 흰빛이라 흰 바탕에서
+		// 사라지므로, 푸른 회색에 섞어 어느 시각에나 옅게 보이게 한다.
+		node.style.setProperty(
+			'--ambient-rgb',
+			sun.rgb.map((c, i) => Math.round(c * 0.45 + AMBIENT_BASE[i] * 0.55)).join(', ')
+		);
+
+		// 그림자는 빛의 반대쪽으로 드리워지고, 해가 낮을수록 길어진다.
+		node.style.setProperty('--shadow-dx', (-(lx - 0.5) * 2 * sun.shadowLength).toFixed(3));
+		node.style.setProperty('--shadow-dy', (-(ly - 0.5) * 2 * sun.shadowLength).toFixed(3));
+	}
+
+	/** 해는 천천히 움직이므로 1분에 한 번이면 충분하다. */
+	function watchSun() {
+		if (sunOverride || sunTimer) return;
+		sunTimer = window.setInterval(() => {
+			sun = sunLight(new Date(), location.lat, location.lon);
+			if (active) writeAll();
+		}, 60_000);
 	}
 
 	function writeScroll() {
@@ -284,6 +327,7 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		// 이미지가 늦게 뜨거나 페이지를 옮기면 내용 높이가 바뀐다.
 		resize = new ResizeObserver(writeContentHeight);
 		resize.observe(content);
+		watchSun();
 	}
 
 	function loop() {
@@ -291,10 +335,7 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		y += (targetY - y) * smoothing;
 		strength += (targetStrength - strength) * FADE_IN;
 
-		node.style.setProperty('--lx', `${(x * 100).toFixed(1)}%`);
-		node.style.setProperty('--ly', `${(y * 100).toFixed(1)}%`);
-		node.style.setProperty('--light-strength', strength.toFixed(3));
-		writeMatrix();
+		writeAll();
 
 		const settled =
 			Math.abs(targetX - x) < SETTLE &&
@@ -352,6 +393,7 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		destroy() {
 			if (frame) cancelAnimationFrame(frame);
 			clearTimeout(probe);
+			clearInterval(sunTimer);
 			resize?.disconnect();
 			node.classList.remove('tilt-active');
 			window.removeEventListener('deviceorientation', onOrientation);
