@@ -1,10 +1,13 @@
 import type { Action } from 'svelte/action';
 
 export interface TiltLightOptions {
-	/** 이 각도(도)만큼 기울이면 효과가 끝까지 간다. */
+	/** 중립에서 이 각도(도)만큼 더 기울이면 효과가 끝까지 간다. */
 	range?: number;
-	/** 사람이 폰을 들고 보는 평균 각도(도). 이 자세를 정면으로 친다. */
-	restAngle?: number;
+	/**
+	 * 중립 자세가 지금 자세를 따라가는 속도(0~1). 0에 가까울수록 처음 자세를
+	 * 오래 기억하고, 키우면 금방 다시 중앙으로 돌아온다.
+	 */
+	recenter?: number;
 	/** 0~1. 클수록 기울기를 즉각 따라오고, 작을수록 미끄러지듯 따라온다. */
 	smoothing?: number;
 	/** 페이지가 흐르는 최대 거리(px). 음수를 주면 방향이 뒤집힌다. */
@@ -113,6 +116,75 @@ const perspectiveMatrix = (d: number): Mat4 => [
 	1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, -1 / d, 0, 0, 0, 1
 ];
 
+export interface TiltTracker {
+	/** 센서 각도를 받아 화면 기준 0~1 좌표를 돌려준다. 0.5가 중립이다. */
+	update(gamma: number, beta: number): { x: number; y: number };
+}
+
+/**
+ * 센서 각도를 화면 좌표로 옮기는 계산만 담당한다. DOM을 건드리지 않으므로
+ * 따로 떼어 검증할 수 있다.
+ *
+ * 절대 각도가 아니라 중립 자세로부터의 변화량을 쓴다. iOS의
+ * UIInterpolatingMotionEffect가 기준 자세의 역을 곱해 상대 회전만 보는 것과
+ * 같은 이유다. 특정 각도로 들고 본다고 가정하면 사람마다 자세가 달라 가만히
+ * 있어도 화면이 한쪽으로 기울어진 채 고정된다.
+ */
+export function createTiltTracker(config: {
+	range: number;
+	recenter: number;
+	lead: number;
+}): TiltTracker {
+	const { range, recenter, lead } = config;
+	/** 예측이 한 번에 밀어낼 수 있는 최대 각도. 센서가 튈 때 화면이 날아가지 않게 막는다. */
+	const maxLead = range * 0.6;
+
+	let reference: { gamma: number; beta: number } | null = null;
+	let lastGamma: number | null = null;
+	let lastBeta = 0;
+	let velocityGamma = 0;
+	let velocityBeta = 0;
+
+	return {
+		update(gamma, beta) {
+			if (reference === null) reference = { gamma, beta };
+
+			let deltaGamma = gamma - reference.gamma;
+			let deltaBeta = beta - reference.beta;
+
+			// beta가 ±90°를 지날 때 오일러각이 튀는 구간이 있다. 말이 안 되는
+			// 변화량이 나오면 그 자세를 새 중립으로 잡고 넘어간다.
+			if (Math.abs(deltaGamma) > 90 || Math.abs(deltaBeta) > 90) {
+				reference = { gamma, beta };
+				deltaGamma = 0;
+				deltaBeta = 0;
+			}
+
+			// 자세를 바꾸면 중립도 천천히 따라가서 다시 중앙으로 돌아온다.
+			reference.gamma += deltaGamma * recenter;
+			reference.beta += deltaBeta * recenter;
+
+			// 각속도를 추정해 그만큼 앞질러 간다. 손을 멈추면 각속도가 0으로
+			// 잦아들면서 목표도 실제 각도로 되돌아오므로 어긋난 채 남지 않는다.
+			if (lastGamma !== null) {
+				velocityGamma += (gamma - lastGamma - velocityGamma) * VELOCITY_TRACK;
+				velocityBeta += (beta - lastBeta - velocityBeta) * VELOCITY_TRACK;
+			}
+			lastGamma = gamma;
+			lastBeta = beta;
+
+			const predictedGamma = deltaGamma + clamp(velocityGamma * lead, -maxLead, maxLead);
+			const predictedBeta = deltaBeta + clamp(velocityBeta * lead, -maxLead, maxLead);
+
+			// 기울인 쪽으로 화면과 빛이 함께 따라간다.
+			return {
+				x: clamp01(0.5 + predictedGamma / (range * 2)),
+				y: clamp01(0.5 + predictedBeta / (range * 2))
+			};
+		}
+	};
+}
+
 /**
  * 기기를 기울이면 페이지가 화면 위에 떠 있는 것처럼 기울고 흐르며,
  * 같은 광원이 표면을 훑고 지나간다.
@@ -126,20 +198,24 @@ const perspectiveMatrix = (d: number): Mat4 => [
  * 원근도 부모의 perspective 속성에 맡기지 않고 행렬에 함께 넣는다. 그래야
  * 축을 옮긴 좌표계 안에서 원근이 걸린다.
  *
+ * 기울기는 절대 각도가 아니라 중립 자세로부터의 변화량으로 다룬다. iOS의
+ * UIInterpolatingMotionEffect가 기준 자세의 역을 곱해 상대 회전만 보는 것과
+ * 같은 이유다. 특정 각도로 들고 본다고 가정하면 사람마다 자세가 달라 가만히
+ * 있어도 화면이 한쪽으로 기울어진 채 고정된다.
+ *
  * 기울기 센서 전용이다. 센서가 없거나 허가를 받지 못하면 세기가 0에 머물러
  * 아무것도 그려지지 않는다.
  */
 export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (node, options) => {
-	const range = options?.range ?? 35;
-	const restAngle = options?.restAngle ?? 45;
+	const range = options?.range ?? 15;
+	const recenter = options?.recenter ?? 0.004;
 	const smoothing = options?.smoothing ?? 0.3;
-	const depth = options?.depth ?? 8;
-	const rotate = options?.rotate ?? 5;
-	const distance = options?.perspective ?? 1200;
-	const lead = options?.lead ?? 3;
+	const depth = options?.depth ?? 5;
+	const rotate = options?.rotate ?? 2.5;
+	const distance = options?.perspective ?? 1600;
+	const lead = options?.lead ?? 2;
 
-	/** 예측이 한 번에 밀어낼 수 있는 최대 각도. 센서가 튈 때 화면이 날아가지 않게 막는다. */
-	const maxLead = range * 0.6;
+	const tracker = createTiltTracker({ range, recenter, lead });
 
 	const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -152,12 +228,6 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 	let targetStrength = 0;
 	let frame = 0;
 	let gotReading = false;
-
-	// 예측에 쓰는 직전 각도와 각속도(이벤트 한 번당 도).
-	let lastGamma: number | null = null;
-	let lastBeta = restAngle;
-	let velocityGamma = 0;
-	let velocityBeta = 0;
 
 	function writeMatrix() {
 		// 지금 보고 있는 화면의 중앙을 회전축으로 삼는다.
@@ -210,24 +280,9 @@ export const tiltLight: Action<HTMLElement, TiltLightOptions | undefined> = (nod
 		if (event.gamma === null && event.beta === null) return;
 		gotReading = true;
 
-		const gamma = event.gamma ?? 0;
-		const beta = event.beta ?? restAngle;
-
-		// 각속도를 추정해 그만큼 앞질러 간다. 손을 멈추면 각속도가 0으로
-		// 잦아들면서 목표도 실제 각도로 되돌아오므로 어긋난 채로 남지 않는다.
-		if (lastGamma !== null) {
-			velocityGamma += (gamma - lastGamma - velocityGamma) * VELOCITY_TRACK;
-			velocityBeta += (beta - lastBeta - velocityBeta) * VELOCITY_TRACK;
-		}
-		lastGamma = gamma;
-		lastBeta = beta;
-
-		const predictedGamma = gamma + clamp(velocityGamma * lead, -maxLead, maxLead);
-		const predictedBeta = beta + clamp(velocityBeta * lead, -maxLead, maxLead);
-
-		// 기기를 오른쪽으로 기울이면 빛은 왼쪽으로 흐르므로 부호를 뒤집는다.
-		targetX = clamp01(0.5 - predictedGamma / (range * 2));
-		targetY = clamp01(0.5 - (predictedBeta - restAngle) / (range * 2));
+		const next = tracker.update(event.gamma ?? 0, event.beta ?? 0);
+		targetX = next.x;
+		targetY = next.y;
 		targetStrength = 1;
 		start();
 	}
